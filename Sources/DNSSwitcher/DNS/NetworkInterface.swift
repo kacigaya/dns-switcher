@@ -9,7 +9,7 @@ enum NetworkInterface {
 
         // Sort: Wi-Fi and Ethernet first, then others
         return connected.sorted { a, b in
-            Priority(a) < priority(b)
+            Priority(a) < Priority(b)
         }
     }
 
