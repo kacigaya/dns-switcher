@@ -20,6 +20,8 @@ DerivedData/
 *.app
 *.dmg
 *.pkg
+*.icns
+*.iconset
 
 # Release archives
 *.zip

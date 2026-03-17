@@ -35,3 +35,4 @@ clean:
 	swift package clean
 	rm -rf .build
 	rm -f $(DMG_NAME)
+	rm -rf $(APP_NAME).iconset
