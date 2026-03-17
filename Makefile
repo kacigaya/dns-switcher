@@ -1,13 +1,13 @@
 APP_NAME = DNSSwitcher
 BUNDLE_ID = com.gayakaci.dns-switcher
-BUILD_DIR = .build/release
+BUILD_DIR = .build/apple/Products/Release
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
 DMG_NAME = DNSSwitcher.dmg
 
 .PHONY: build app dmg clean
 
 build:
-	swift build -c release
+	swift build -c release --arch arm64 --arch x86_64
 
 app: build
 	mkdir -p "$(APP_BUNDLE)/Contents/MacOS"
