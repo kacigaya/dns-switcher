@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.svg" alt="Logo" width="200">
+  <img src="icon.svg" alt="Logo" width="200">
 </p>
 
 <h1 align="center">DNSSwitcher</h1>
