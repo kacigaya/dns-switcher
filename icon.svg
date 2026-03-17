@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#143e82"/>
+      <stop offset="100%" stop-color="#3c97e3"/>
+    </linearGradient>
+
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+
+    <g id="white-arrow">
+      <path d="M 346 100.12 A 180 180 0 0 1 411.88 346" fill="none" stroke="#f1f5f9" stroke-width="20" stroke-linecap="round"/>
+      <polygon points="-12,-20 28,0 -12,20" fill="#f1f5f9" transform="translate(411.88, 346) rotate(120)" />
+    </g>
+    <g id="green-arrow">
+      <path d="M 346 100.12 A 180 180 0 0 1 411.88 346" fill="none" stroke="#4ade80" stroke-width="20" stroke-linecap="round"/>
+      <polygon points="-12,-20 28,0 -12,20" fill="#4ade80" transform="translate(411.88, 346) rotate(120)" />
+    </g>
+  </defs>
+
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+
+  <g filter="url(#drop-shadow)">
+    <animateTransform attributeName="transform" type="rotate" from="0 256 256" to="360 256 256" dur="6s" repeatCount="indefinite" />
+    <use href="#green-arrow" /> 
+    <use href="#white-arrow" transform="rotate(120 256 256)" />
+    <use href="#white-arrow" transform="rotate(240 256 256)" />
+  </g>
+
+  <g filter="url(#drop-shadow)">
+    <g stroke="#f1f5f9" fill="none" stroke-width="6" stroke-linecap="round">
+      <circle cx="256" cy="256" r="130" stroke-width="8" />
+      <line x1="256" y1="126" x2="256" y2="386" />
+      <line x1="126" y1="256" x2="386" y2="256" />
+      <path d="M 256 126 Q 160 256 256 386" />
+      <path d="M 256 126 Q 352 256 256 386" />
+      <path d="M 126 256 Q 256 160 386 256" />
+      <path d="M 126 256 Q 256 352 386 256" />
+    </g>
+
+    <g fill="#f1f5f9">
+      <circle cx="256" cy="256" r="12">
+        <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="256" cy="126" r="10" />
+      <circle cx="256" cy="386" r="10" />
+      <circle cx="126" cy="256" r="10" />
+      <circle cx="386" cy="256" r="10" />
+      <circle cx="202" cy="202" r="8" />
+      <circle cx="310" cy="202" r="8" />
+      <circle cx="202" cy="310" r="8" />
+      <circle cx="310" cy="310" r="8" />
+    </g>
+  </g>
+
+  <g transform="translate(370, 390)" filter="url(#drop-shadow)">
+    <rect x="0" y="0" width="80" height="18" rx="4" fill="#f1f5f9" />
+    <circle cx="12" cy="9" r="3.5" fill="#1e293b" />
+    <circle cx="24" cy="9" r="3.5" fill="#1e293b" />
+    <circle cx="68" cy="9" r="4" fill="#4ade80">
+      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" />
+    </circle>
+
+    <rect x="0" y="24" width="80" height="18" rx="4" fill="#f1f5f9" />
+    <circle cx="12" cy="33" r="3.5" fill="#1e293b" />
+    <circle cx="24" cy="33" r="3.5" fill="#1e293b" />
+    <circle cx="68" cy="33" r="4" fill="#4ade80">
+      <animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite" />
+    </circle>
+
+    <rect x="0" y="48" width="80" height="18" rx="4" fill="#f1f5f9" />
+    <circle cx="12" cy="57" r="3.5" fill="#1e293b" />
+    <circle cx="24" cy="57" r="3.5" fill="#1e293b" />
+    <circle cx="68" cy="57" r="4" fill="#4ade80">
+      <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" />
+    </circle>
+    
+    <path d="M 40 66 L 40 82 M 16 82 L 64 82 M 16 82 L 16 90 M 64 82 L 64 90" stroke="#f1f5f9" stroke-width="3" fill="none" />
+    <circle cx="40" cy="82" r="5" fill="#f1f5f9" />
+  </g>
+</svg>

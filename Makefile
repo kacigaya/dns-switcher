@@ -1,4 +1,4 @@
-APP_NAME = DNS Switcher
+APP_NAME = DNSSwitcher
 BUNDLE_ID = com.gayakaci.dns-switcher
 BUILD_DIR = .build/release
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
@@ -12,17 +12,20 @@ build:
 app: build
 	mkdir -p "$(APP_BUNDLE)/Contents/MacOS"
 	mkdir -p "$(APP_BUNDLE)/Contents/Resources"
-	cp $(BUILD_DIR)/DNSSwitcher "$(APP_BUNDLE)/Contents/MacOS/DNS Switcher"
+	cp $(BUILD_DIR)/DNSSwitcher "$(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)"
+	cp $(APP_NAME).icns "$(APP_BUNDLE)/Contents/Resources/$(APP_NAME).icns"
 	/usr/libexec/PlistBuddy -c "Add :CFBundleName string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleName '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string '$(BUNDLE_ID)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier '$(BUNDLE_ID)'" "$(APP_BUNDLE)/Contents/Info.plist"
-	/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string 'DNS Switcher'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
-	/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable 'DNS Switcher'" "$(APP_BUNDLE)/Contents/Info.plist"
+	/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string 'APPL'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string '1.0.0'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string '1.0.0'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :CFBundleIconFile '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"
 
 dmg: app
 	rm -f $(DMG_NAME)

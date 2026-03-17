@@ -1,6 +1,13 @@
-# DNS Switcher
+<p align="center">
+  <img src="icons/logo.svg" alt="Logo" width="200">
+</p>
 
-A lightweight macOS menu bar app for instant DNS profile switching. No Dock icon — lives entirely in your menu bar.
+<h1 align="center">DNSSwitcher</h1>
+
+<p align="center">
+   <strong>A lightweight macOS menu bar app for instant DNS profile switching</strong><br>
+   <em>No Dock icon — lives entirely in your menu bar.</em>
+</p>
 
 ## Features
 
@@ -29,10 +36,10 @@ brew install --cask dnsswitcher
 ### Build from source
 
 ```bash
-git clone https://github.com/gayakaci/dns-switcher.git
+git clone https://github.com/kacigaya/dns-switcher.git
 cd dns-switcher
 make app
-open ".build/release/DNS Switcher.app"
+open ".build/release/DNSSwitcher.app"
 ```
 
 ## Usage
