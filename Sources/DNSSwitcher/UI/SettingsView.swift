@@ -142,6 +142,20 @@ struct ProfileEditorView: View {
                 Spacer()
 
                 Button("Save") {
+                    let trimmedName = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    if trimmedName.isEmpty {
+                        validationError = "Profile name cannot be empty."
+                        return
+                    }
+
+                    if trimmedName.count > 50 {
+                        validationError = "Profile name must be 50 characters or fewer."
+                        return
+                    }
+
+                    profile.name = trimmedName
+
                     let servers = serversText
                         .components(separatedBy: ",")
                         .map { $0.trimmingCharacters(in: .whitespaces) }
