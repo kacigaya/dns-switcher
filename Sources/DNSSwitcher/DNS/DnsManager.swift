@@ -35,10 +35,24 @@ enum DnsManager {
         )
     }
 
-    static func RunPrivileged(command: String) -> CommandResult {
-        let escapedCommand = command
+    /// Wraps a single argument in single quotes, escaping any embedded single quotes.
+    /// This prevents shell interpretation of metacharacters like $, `, !, ;, |, &, etc.
+    private static func ShellQuote(_ arg: String) -> String {
+        let escaped = arg.replacingOccurrences(of: "'", with: "'\\''")
+        return "'\(escaped)'"
+    }
+
+    /// Escapes a pre-quoted shell command for embedding inside an AppleScript
+    /// `do shell script "..."` double-quoted string.
+    private static func EscapeForAppleScript(_ command: String) -> String {
+        return command
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    static func RunPrivileged(args: [String]) -> CommandResult {
+        let command = args.map { ShellQuote($0) }.joined(separator: " ")
+        let escapedCommand = EscapeForAppleScript(command)
 
         let script = """
             do shell script "\(escapedCommand)" with administrator privileges
@@ -74,9 +88,8 @@ enum DnsManager {
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
-                let serverList = profile.servers.joined(separator: " ")
-                let cmd = "/usr/sbin/networksetup -setdnsservers \"\(iface)\" \(serverList)"
-                let privResult = RunPrivileged(command: cmd)
+                let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface] + profile.servers
+                let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
                     ShowAlert(
@@ -106,8 +119,8 @@ enum DnsManager {
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
-                let cmd = "/usr/sbin/networksetup -setdnsservers \"\(iface)\" empty"
-                let privResult = RunPrivileged(command: cmd)
+                let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface, "empty"]
+                let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
                     ShowAlert(
