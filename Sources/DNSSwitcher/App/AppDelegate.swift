@@ -8,6 +8,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // Close any windows that SwiftUI's Settings scene auto-created
+        for window in NSApp.windows {
+            window.close()
+        }
+
         statusBarController = StatusBarController(profileStore: profileStore) { [weak self] in
             self?.ShowSettings()
         }
