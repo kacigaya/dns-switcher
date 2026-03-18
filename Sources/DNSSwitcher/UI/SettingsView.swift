@@ -7,6 +7,7 @@ struct SettingsView: View {
     @State private var editingProfile: DnsProfile?
     @State private var showingEditor = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginItemError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -70,10 +71,18 @@ struct SettingsView: View {
                             } else {
                                 try SMAppService.mainApp.unregister()
                             }
+                            loginItemError = nil
                         } catch {
                             launchAtLogin = !newValue
+                            loginItemError = error.localizedDescription
                         }
                     }
+
+                if let loginItemError {
+                    Text(loginItemError)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
             }
             .padding()
         }
