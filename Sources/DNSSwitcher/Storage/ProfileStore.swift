@@ -63,11 +63,13 @@ final class ProfileStore: ObservableObject {
     }
 
     private static func isValidIP(_ string: String) -> Bool {
-        var ipv4Address = sockaddr_in()
-        if inet_pton(AF_INET, string, &ipv4Address.sin_addr) == 1 { return true }
-        var ipv6Address = sockaddr_in6()
-        if inet_pton(AF_INET6, string, &ipv6Address.sin6_addr) == 1 { return true }
-        return false
+        return string.withCString { cString in
+            var ipv4Address = sockaddr_in()
+            if inet_pton(AF_INET, cString, &ipv4Address.sin_addr) == 1 { return true }
+            var ipv6Address = sockaddr_in6()
+            if inet_pton(AF_INET6, cString, &ipv6Address.sin6_addr) == 1 { return true }
+            return false
+        }
     }
 
     func activeProfile() -> DnsProfile? {

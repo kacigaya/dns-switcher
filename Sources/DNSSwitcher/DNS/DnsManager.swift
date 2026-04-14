@@ -102,7 +102,7 @@ enum DnsManager {
 
                 if privResult.exitCode != 0 {
                     failures.append(
-                        BuildFailureMessage(
+                        buildFailureMessage(
                             action: "set DNS",
                             interfaceName: iface,
                             details: privResult.output
@@ -152,7 +152,7 @@ enum DnsManager {
 
                 if privResult.exitCode != 0 {
                     failures.append(
-                        BuildFailureMessage(
+                        buildFailureMessage(
                             action: "reset DNS",
                             interfaceName: iface,
                             details: privResult.output
@@ -194,7 +194,7 @@ enum DnsManager {
         _ = RunCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
     }
 
-    private static func BuildFailureMessage(action: String, interfaceName: String, details: String) -> String {
+    private static func buildFailureMessage(action: String, interfaceName: String, details: String) -> String {
         let trimmed = details.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return "Could not \(action) for \(interfaceName)."
