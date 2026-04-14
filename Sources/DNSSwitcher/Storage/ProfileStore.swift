@@ -28,7 +28,7 @@ final class ProfileStore: ObservableObject {
 
         if let data = UserDefaults.standard.data(forKey: Self.profilesKey),
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
-            let validated = decoded.filter { Self.IsValidProfile($0) }
+            let validated = decoded.filter { Self.isValidProfile($0) }
             self.profiles = validated.isEmpty ? DnsProfile.defaults : validated
         } else {
             self.profiles = DnsProfile.defaults
@@ -47,21 +47,21 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private static func IsValidProfile(_ profile: DnsProfile) -> Bool {
+    private static func isValidProfile(_ profile: DnsProfile) -> Bool {
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name.count <= 50, !profile.servers.isEmpty else {
             return false
         }
 
         for server in profile.servers {
-            if !IsValidIP(server) {
+            if !isValidIP(server) {
                 return false
             }
         }
         return true
     }
 
-    private static func IsValidIP(_ string: String) -> Bool {
+    private static func isValidIP(_ string: String) -> Bool {
         var sin = sockaddr_in()
         if inet_pton(AF_INET, string, &sin.sin_addr) == 1 { return true }
         var sin6 = sockaddr_in6()
