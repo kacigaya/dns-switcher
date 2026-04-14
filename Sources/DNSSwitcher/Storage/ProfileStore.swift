@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Darwin
 
 final class ProfileStore: ObservableObject {
     private static let profilesKey = "dns_profiles"
@@ -27,7 +28,8 @@ final class ProfileStore: ObservableObject {
 
         if let data = UserDefaults.standard.data(forKey: Self.profilesKey),
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
-            self.profiles = decoded
+            let validated = decoded.filter { Self.IsValidProfile($0) }
+            self.profiles = validated.isEmpty ? DnsProfile.defaults : validated
         } else {
             self.profiles = DnsProfile.defaults
         }
@@ -43,6 +45,28 @@ final class ProfileStore: ObservableObject {
         if let data = try? JSONEncoder().encode(profiles) {
             UserDefaults.standard.set(data, forKey: Self.profilesKey)
         }
+    }
+
+    private static func IsValidProfile(_ profile: DnsProfile) -> Bool {
+        let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name.count <= 50, !profile.servers.isEmpty else {
+            return false
+        }
+
+        for server in profile.servers {
+            if !IsValidIP(server) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private static func IsValidIP(_ string: String) -> Bool {
+        var sin = sockaddr_in()
+        if inet_pton(AF_INET, string, &sin.sin_addr) == 1 { return true }
+        var sin6 = sockaddr_in6()
+        if inet_pton(AF_INET6, string, &sin6.sin6_addr) == 1 { return true }
+        return false
     }
 
     func ActiveProfile() -> DnsProfile? {

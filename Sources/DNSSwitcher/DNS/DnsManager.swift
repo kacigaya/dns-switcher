@@ -83,22 +83,35 @@ enum DnsManager {
             return
         }
 
+        var failures: [String] = []
+        var didShowPermissionNotice = false
         for iface in interfaces {
             let args = ["-setdnsservers", iface] + profile.servers
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface] + profile.servers
+                if !didShowPermissionNotice {
+                    ShowAlert(
+                        title: "Administrator Permission Required",
+                        message: "DNSSwitcher needs administrator permission to apply DNS settings."
+                    )
+                    didShowPermissionNotice = true
+                }
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    ShowAlert(
-                        title: "DNS Change Failed",
-                        message: "Could not set DNS for \(iface):\n\(privResult.output)"
-                    )
-                    return
+                    failures.append("\(iface): \(privResult.output)")
                 }
             }
+        }
+
+        if !failures.isEmpty {
+            ShowAlert(
+                title: "DNS Change Partially Failed",
+                message: failures.joined(separator: "\n")
+            )
+            return
         }
 
         FlushDnsCache()
@@ -114,22 +127,35 @@ enum DnsManager {
             return
         }
 
+        var failures: [String] = []
+        var didShowPermissionNotice = false
         for iface in interfaces {
             let args = ["-setdnsservers", iface, "empty"]
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface, "empty"]
+                if !didShowPermissionNotice {
+                    ShowAlert(
+                        title: "Administrator Permission Required",
+                        message: "DNSSwitcher needs administrator permission to reset DNS settings."
+                    )
+                    didShowPermissionNotice = true
+                }
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    ShowAlert(
-                        title: "DNS Reset Failed",
-                        message: "Could not reset DNS for \(iface):\n\(privResult.output)"
-                    )
-                    return
+                    failures.append("\(iface): \(privResult.output)")
                 }
             }
+        }
+
+        if !failures.isEmpty {
+            ShowAlert(
+                title: "DNS Reset Partially Failed",
+                message: failures.joined(separator: "\n")
+            )
+            return
         }
 
         FlushDnsCache()
