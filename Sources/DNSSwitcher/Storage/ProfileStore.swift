@@ -69,7 +69,7 @@ final class ProfileStore: ObservableObject {
         return false
     }
 
-    func ActiveProfile() -> DnsProfile? {
+    func activeProfile() -> DnsProfile? {
         guard let id = activeProfileId else { return nil }
         return profiles.first { $0.id == id }
     }
