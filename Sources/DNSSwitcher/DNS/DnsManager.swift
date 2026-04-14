@@ -112,6 +112,8 @@ enum DnsManager {
             }
         }
 
+        FlushDnsCache()
+
         if !failures.isEmpty {
             ShowAlert(
                 title: "DNS Change Partially Failed",
@@ -119,8 +121,6 @@ enum DnsManager {
             )
             return
         }
-
-        FlushDnsCache()
     }
 
     static func ResetToDefault(toAllInterfaces: Bool) {
@@ -162,6 +162,8 @@ enum DnsManager {
             }
         }
 
+        FlushDnsCache()
+
         if !failures.isEmpty {
             ShowAlert(
                 title: "DNS Reset Partially Failed",
@@ -169,8 +171,6 @@ enum DnsManager {
             )
             return
         }
-
-        FlushDnsCache()
     }
 
     static func GetCurrentDNS(for interface: String) -> [String] {
