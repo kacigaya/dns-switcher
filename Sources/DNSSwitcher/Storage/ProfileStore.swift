@@ -62,10 +62,10 @@ final class ProfileStore: ObservableObject {
     }
 
     private static func isValidIP(_ string: String) -> Bool {
-        var sin = sockaddr_in()
-        if inet_pton(AF_INET, string, &sin.sin_addr) == 1 { return true }
-        var sin6 = sockaddr_in6()
-        if inet_pton(AF_INET6, string, &sin6.sin6_addr) == 1 { return true }
+        var ipv4Address = sockaddr_in()
+        if inet_pton(AF_INET, string, &ipv4Address.sin_addr) == 1 { return true }
+        var ipv6Address = sockaddr_in6()
+        if inet_pton(AF_INET6, string, &ipv6Address.sin6_addr) == 1 { return true }
         return false
     }
 

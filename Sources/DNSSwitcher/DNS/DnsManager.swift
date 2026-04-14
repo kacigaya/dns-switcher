@@ -101,7 +101,7 @@ enum DnsManager {
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    failures.append("\(iface): \(privResult.output)")
+                    failures.append("Could not set DNS for \(iface).")
                 }
             }
         }
@@ -145,7 +145,7 @@ enum DnsManager {
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    failures.append("\(iface): \(privResult.output)")
+                    failures.append("Could not reset DNS for \(iface).")
                 }
             }
         }
