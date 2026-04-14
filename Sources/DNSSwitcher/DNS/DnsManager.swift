@@ -101,7 +101,13 @@ enum DnsManager {
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    failures.append("Could not set DNS for \(iface).")
+                    failures.append(
+                        BuildFailureMessage(
+                            action: "set DNS",
+                            interfaceName: iface,
+                            details: privResult.output
+                        )
+                    )
                 }
             }
         }
@@ -145,7 +151,13 @@ enum DnsManager {
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    failures.append("Could not reset DNS for \(iface).")
+                    failures.append(
+                        BuildFailureMessage(
+                            action: "reset DNS",
+                            interfaceName: iface,
+                            details: privResult.output
+                        )
+                    )
                 }
             }
         }
@@ -180,6 +192,14 @@ enum DnsManager {
 
     private static func FlushDnsCache() {
         _ = RunCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
+    }
+
+    private static func BuildFailureMessage(action: String, interfaceName: String, details: String) -> String {
+        let trimmed = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "Could not \(action) for \(interfaceName)."
+        }
+        return "Could not \(action) for \(interfaceName). Details: \(trimmed)"
     }
 
     private static func ShowAlert(title: String, message: String) {

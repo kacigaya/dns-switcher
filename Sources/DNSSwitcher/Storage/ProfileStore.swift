@@ -6,6 +6,7 @@ final class ProfileStore: ObservableObject {
     private static let profilesKey = "dns_profiles"
     private static let activeProfileIdKey = "active_profile_id"
     private static let applyToAllKey = "apply_to_all_interfaces"
+    private static let maxProfileNameLength = 50
 
     @Published var profiles: [DnsProfile] {
         didSet { Save() }
@@ -49,7 +50,7 @@ final class ProfileStore: ObservableObject {
 
     private static func isValidProfile(_ profile: DnsProfile) -> Bool {
         let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, name.count <= 50, !profile.servers.isEmpty else {
+        guard !name.isEmpty, name.count <= Self.maxProfileNameLength, !profile.servers.isEmpty else {
             return false
         }
 
