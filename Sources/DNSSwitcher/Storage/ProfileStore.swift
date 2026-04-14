@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+// Required for inet_pton, AF_INET/AF_INET6, and sockaddr types used in IP validation.
 import Darwin
 
 final class ProfileStore: ObservableObject {

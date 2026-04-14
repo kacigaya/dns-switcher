@@ -92,10 +92,7 @@ enum DnsManager {
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface] + profile.servers
                 if !didShowPermissionNotice {
-                    ShowAlert(
-                        title: "Administrator Permission Required",
-                        message: "DNSSwitcher needs administrator permission to apply DNS settings."
-                    )
+                    showPermissionNotice(for: "apply")
                     didShowPermissionNotice = true
                 }
                 let privResult = RunPrivileged(args: privArgs)
@@ -142,10 +139,7 @@ enum DnsManager {
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface, "empty"]
                 if !didShowPermissionNotice {
-                    ShowAlert(
-                        title: "Administrator Permission Required",
-                        message: "DNSSwitcher needs administrator permission to reset DNS settings."
-                    )
+                    showPermissionNotice(for: "reset")
                     didShowPermissionNotice = true
                 }
                 let privResult = RunPrivileged(args: privArgs)
@@ -200,6 +194,13 @@ enum DnsManager {
             return "Could not \(action) for \(interfaceName)."
         }
         return "Could not \(action) for \(interfaceName). Details: \(trimmed)"
+    }
+
+    private static func showPermissionNotice(for action: String) {
+        ShowAlert(
+            title: "Administrator Permission Required",
+            message: "DNSSwitcher needs administrator permission to \(action) DNS settings."
+        )
     }
 
     private static func ShowAlert(title: String, message: String) {
