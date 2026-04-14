@@ -83,25 +83,41 @@ enum DnsManager {
             return
         }
 
+        var failures: [String] = []
+        var didShowPermissionNotice = false
         for iface in interfaces {
             let args = ["-setdnsservers", iface] + profile.servers
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface] + profile.servers
+                if !didShowPermissionNotice {
+                    showPermissionNotice(for: "apply")
+                    didShowPermissionNotice = true
+                }
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    ShowAlert(
-                        title: "DNS Change Failed",
-                        message: "Could not set DNS for \(iface):\n\(privResult.output)"
+                    failures.append(
+                        buildFailureMessage(
+                            action: "set DNS",
+                            interfaceName: iface,
+                            details: privResult.output
+                        )
                     )
-                    return
                 }
             }
         }
 
         FlushDnsCache()
+
+        if !failures.isEmpty {
+            ShowAlert(
+                title: "DNS Change Partially Failed",
+                message: failures.joined(separator: "\n")
+            )
+            return
+        }
     }
 
     static func ResetToDefault(toAllInterfaces: Bool) {
@@ -114,25 +130,41 @@ enum DnsManager {
             return
         }
 
+        var failures: [String] = []
+        var didShowPermissionNotice = false
         for iface in interfaces {
             let args = ["-setdnsservers", iface, "empty"]
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
                 let privArgs = ["/usr/sbin/networksetup", "-setdnsservers", iface, "empty"]
+                if !didShowPermissionNotice {
+                    showPermissionNotice(for: "reset")
+                    didShowPermissionNotice = true
+                }
                 let privResult = RunPrivileged(args: privArgs)
 
                 if privResult.exitCode != 0 {
-                    ShowAlert(
-                        title: "DNS Reset Failed",
-                        message: "Could not reset DNS for \(iface):\n\(privResult.output)"
+                    failures.append(
+                        buildFailureMessage(
+                            action: "reset DNS",
+                            interfaceName: iface,
+                            details: privResult.output
+                        )
                     )
-                    return
                 }
             }
         }
 
         FlushDnsCache()
+
+        if !failures.isEmpty {
+            ShowAlert(
+                title: "DNS Reset Partially Failed",
+                message: failures.joined(separator: "\n")
+            )
+            return
+        }
     }
 
     static func GetCurrentDNS(for interface: String) -> [String] {
@@ -154,6 +186,21 @@ enum DnsManager {
 
     private static func FlushDnsCache() {
         _ = RunCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
+    }
+
+    private static func buildFailureMessage(action: String, interfaceName: String, details: String) -> String {
+        let trimmed = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return "Could not \(action) for \(interfaceName)."
+        }
+        return "Could not \(action) for \(interfaceName). Details: \(trimmed)"
+    }
+
+    private static func showPermissionNotice(for action: String) {
+        ShowAlert(
+            title: "Administrator Permission Required",
+            message: "DNSSwitcher needs administrator permission to \(action) DNS settings."
+        )
     }
 
     private static func ShowAlert(title: String, message: String) {

@@ -29,7 +29,7 @@ brew install --cask dnsswitcher
 
 ### Manual
 
-1. Download the latest DMG from [Releases](https://github.com/gayakaci/dns-switcher/releases)
+1. Download the latest DMG from [Releases](https://github.com/kacigaya/dns-switcher/releases)
 2. Drag **DNS Switcher** to Applications
 3. Launch the app — a network icon appears in the menu bar
 

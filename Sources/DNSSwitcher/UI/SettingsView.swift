@@ -89,7 +89,10 @@ struct SettingsView: View {
         .frame(width: 420, height: 380)
         .sheet(isPresented: $showingEditor) {
             if let profile = editingProfile {
-                ProfileEditorView(profile: profile) { updated in
+                ProfileEditorView(
+                    profile: profile,
+                    onCancel: { showingEditor = false }
+                ) { updated in
                     if let idx = profileStore.profiles.firstIndex(where: { $0.id == updated.id }) {
                         profileStore.profiles[idx] = updated
                     }
@@ -119,11 +122,13 @@ struct ProfileEditorView: View {
     @State private var serversText: String
     @State private var validationError: String?
 
+    let onCancel: () -> Void
     let onSave: (DnsProfile) -> Void
 
-    init(profile: DnsProfile, onSave: @escaping (DnsProfile) -> Void) {
+    init(profile: DnsProfile, onCancel: @escaping () -> Void, onSave: @escaping (DnsProfile) -> Void) {
         self._profile = State(initialValue: profile)
         self._serversText = State(initialValue: profile.servers.joined(separator: ", "))
+        self.onCancel = onCancel
         self.onSave = onSave
     }
 
@@ -144,7 +149,7 @@ struct ProfileEditorView: View {
 
             HStack {
                 Button("Cancel") {
-                    onSave(profile) // dismiss without changes — caller handles sheet
+                    onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
 
