@@ -1,5 +1,6 @@
 APP_NAME = DNSSwitcher
 BUNDLE_ID = com.gayakaci.dns-switcher
+VERSION = 1.2.1
 BUILD_DIR = .build/apple/Products/Release
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
 DMG_NAME = DNSSwitcher.dmg
@@ -36,8 +37,10 @@ app: build icns
 	/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleExecutable '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string 'APPL'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
-	/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string '1.0.0'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
-	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string '1.0.0'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :CFBundleVersion '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist"
+	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleIconFile '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"

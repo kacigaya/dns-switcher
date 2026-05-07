@@ -30,12 +30,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .environmentObject(profileStore)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 380),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 460),
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.title = "DNS Switcher Settings"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
         window.isReleasedWhenClosed = false
