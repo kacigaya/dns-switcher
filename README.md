@@ -21,9 +21,10 @@
 
 ## Installation
 
-### Homebrew (coming soon)
+### Homebrew
 
 ```bash
+brew tap kacigaya/tap
 brew install --cask dnsswitcher
 ```
 
