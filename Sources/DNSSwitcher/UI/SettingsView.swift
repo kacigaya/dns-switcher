@@ -11,94 +11,78 @@ struct SettingsView: View {
     @State private var loginItemError: String?
 
     var body: some View {
-        ZStack {
-            LiquidGlassBackground()
-                .ignoresSafeArea()
-
-            VStack(alignment: .leading, spacing: 16) {
-                Header
-
-                VStack(spacing: 0) {
-                    List(selection: $selection) {
-                        ForEach(profileStore.profiles) { profile in
-                            ProfileRow(profile: profile, isActive: profile.id == profileStore.activeProfileId)
-                                .tag(profile.id)
-                                .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
-                                .listRowSeparator(.hidden)
-                                .listRowBackground(Color.clear)
-                        }
-                        .onMove { indices, destination in
-                            profileStore.profiles.move(fromOffsets: indices, toOffset: destination)
-                        }
+        Form {
+            Section("Profiles") {
+                List(selection: $selection) {
+                    ForEach(profileStore.profiles) { profile in
+                        ProfileRow(profile: profile, isActive: profile.id == profileStore.activeProfileId)
+                            .tag(profile.id)
                     }
-                    .scrollContentBackground(.hidden)
-                    .listStyle(.inset)
-
-                    Divider()
-                        .opacity(0.45)
-
-                    HStack(spacing: 8) {
-                        Button(action: AddProfile) {
-                            Label("Add", systemImage: "plus")
-                        }
-
-                        Button(action: RemoveSelected) {
-                            Label("Remove", systemImage: "minus")
-                        }
-                        .disabled(selection == nil)
-
-                        Spacer()
-
-                        Button {
-                            guard let sel = selection,
-                                  let profile = profileStore.profiles.first(where: { $0.id == sel })
-                            else { return }
-                            editingProfile = profile
-                            showingEditor = true
-                        } label: {
-                            Label("Edit", systemImage: "slider.horizontal.3")
-                        }
-                        .disabled(selection == nil)
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.bordered)
-                    .controlSize(.regular)
-                    .padding(12)
-                }
-                .glassPanel()
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
-
-                    Toggle("Launch at login", isOn: $launchAtLogin)
-                        .onChange(of: launchAtLogin) { newValue in
-                            do {
-                                if newValue {
-                                    try SMAppService.mainApp.register()
-                                } else {
-                                    try SMAppService.mainApp.unregister()
-                                }
-                                loginItemError = nil
-                            } catch {
-                                launchAtLogin = !newValue
-                                loginItemError = error.localizedDescription
-                            }
-                        }
-
-                    if let loginItemError {
-                        Text(loginItemError)
-                            .font(.caption)
-                            .foregroundColor(.red)
+                    .onMove { indices, destination in
+                        profileStore.profiles.move(fromOffsets: indices, toOffset: destination)
                     }
                 }
-                .padding(16)
-                .glassPanel()
+                .frame(minHeight: 180)
+                .listStyle(.bordered)
+
+                HStack(spacing: 6) {
+                    Button(action: AddProfile) {
+                        Image(systemName: "plus")
+                            .frame(width: 20, height: 16)
+                    }
+                    .help("Add profile")
+
+                    Button(action: RemoveSelected) {
+                        Image(systemName: "minus")
+                            .frame(width: 20, height: 16)
+                    }
+                    .help("Remove profile")
+                    .disabled(selection == nil)
+
+                    Button {
+                        guard let sel = selection,
+                              let profile = profileStore.profiles.first(where: { $0.id == sel })
+                        else { return }
+                        editingProfile = profile
+                        showingEditor = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .frame(width: 20, height: 16)
+                    }
+                    .help("Edit profile")
+                    .disabled(selection == nil)
+
+                    Spacer()
+                }
+                .buttonStyle(.borderless)
             }
-            .padding(.top, 30)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+
+            Section {
+                Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
+                Toggle("Launch at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { newValue in
+                        do {
+                            if newValue {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                            loginItemError = nil
+                        } catch {
+                            launchAtLogin = !newValue
+                            loginItemError = error.localizedDescription
+                        }
+                    }
+
+                if let loginItemError {
+                    Text(loginItemError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
         }
-        .frame(width: 500, height: 460)
+        .formStyle(.grouped)
+        .frame(width: 480, height: 460)
         .sheet(isPresented: $showingEditor) {
             if let profile = editingProfile {
                 ProfileEditorView(
@@ -111,31 +95,6 @@ struct SettingsView: View {
                     showingEditor = false
                 }
             }
-        }
-    }
-
-    private var Header: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "network")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white, Color.accentColor)
-                .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(.white.opacity(0.35), lineWidth: 1)
-                }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("DNS Switcher")
-                    .font(.title2.weight(.semibold))
-
-                Text("Profiles and launch settings")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
         }
     }
 
@@ -159,10 +118,14 @@ private struct ProfileRow: View {
     let isActive: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(isActive ? Color.green : Color.secondary.opacity(0.25))
+                .frame(width: 8, height: 8)
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
-                    .font(.headline)
+                    .font(.body)
                     .lineLimit(1)
 
                 Text(profile.servers.joined(separator: ", "))
@@ -171,22 +134,11 @@ private struct ProfileRow: View {
                     .lineLimit(1)
             }
 
-            Spacer(minLength: 12)
-
-            if isActive {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.green)
-                    .accessibilityLabel("Active profile")
-            }
+            Spacer(minLength: 8)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 10)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(.white.opacity(isActive ? 0.45 : 0.22), lineWidth: 1)
-        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(isActive ? "\(profile.name), active" : profile.name)
     }
 }
 
@@ -206,109 +158,79 @@ struct ProfileEditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Edit Profile").font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Edit Profile")
+                .font(.headline)
 
             Form {
-                TextField("Name:", text: $profile.name)
-                TextField("DNS Servers (comma-separated):", text: $serversText)
+                TextField("Name", text: $profile.name)
+                TextField("DNS servers", text: $serversText, prompt: Text("8.8.8.8, 1.1.1.1"))
+            }
+            .formStyle(.grouped)
+            .frame(minHeight: 110)
 
-                if let error = validationError {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
+            if let error = validationError {
+                Text(error)
+                    .foregroundStyle(.red)
+                    .font(.caption)
             }
 
             HStack {
-                Button("Cancel") {
-                    onCancel()
-                }
-                .keyboardShortcut(.cancelAction)
+                Button("Cancel") { onCancel() }
+                    .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Save") {
-                    let trimmedName = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                    if trimmedName.isEmpty {
-                        validationError = "Profile name cannot be empty."
-                        return
-                    }
-
-                    if trimmedName.count > 50 {
-                        validationError = "Profile name must be 50 characters or fewer."
-                        return
-                    }
-
-                    profile.name = trimmedName
-
-                    let servers = serversText
-                        .components(separatedBy: ",")
-                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                        .filter { !$0.isEmpty }
-
-                    if servers.isEmpty {
-                        validationError = "At least one DNS server is required."
-                        return
-                    }
-
-                    for server in servers {
-                        if !IsValidIP(server) {
-                            validationError = "\"\(server)\" is not a valid IPv4 or IPv6 address."
-                            return
-                        }
-                    }
-
-                    profile.servers = servers
-                    validationError = nil
-                    onSave(profile)
-                }
-                .keyboardShortcut(.defaultAction)
+                Button("Save", action: Save)
+                    .keyboardShortcut(.defaultAction)
             }
         }
-        .padding()
-        .frame(width: 360)
+        .padding(20)
+        .frame(width: 380)
+    }
+
+    private func Save() {
+        let trimmedName = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmedName.isEmpty {
+            validationError = "Profile name cannot be empty."
+            return
+        }
+
+        if trimmedName.count > 50 {
+            validationError = "Profile name must be 50 characters or fewer."
+            return
+        }
+
+        profile.name = trimmedName
+
+        let servers = serversText
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        if servers.isEmpty {
+            validationError = "At least one DNS server is required."
+            return
+        }
+
+        for server in servers {
+            if !IsValidIP(server) {
+                validationError = "\"\(server)\" is not a valid IPv4 or IPv6 address."
+                return
+            }
+        }
+
+        profile.servers = servers
+        validationError = nil
+        onSave(profile)
     }
 
     private func IsValidIP(_ string: String) -> Bool {
-        // IPv4
         var sin = sockaddr_in()
         if inet_pton(AF_INET, string, &sin.sin_addr) == 1 { return true }
-        // IPv6
         var sin6 = sockaddr_in6()
         if inet_pton(AF_INET6, string, &sin6.sin6_addr) == 1 { return true }
         return false
-    }
-}
-
-private struct LiquidGlassBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .hudWindow
-        view.blendingMode = .behindWindow
-        view.state = .active
-        view.isEmphasized = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
-
-private struct GlassPanelModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(.white.opacity(0.32), lineWidth: 1)
-            }
-            .shadow(color: .black.opacity(0.18), radius: 18, y: 10)
-    }
-}
-
-private extension View {
-    func glassPanel() -> some View {
-        modifier(GlassPanelModifier())
     }
 }

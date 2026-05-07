@@ -10,3 +10,4 @@ struct DNSSwitcherApp: App {
         }
     }
 }
+
