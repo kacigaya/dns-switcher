@@ -26,13 +26,15 @@
 ```bash
 brew tap kacigaya/tap
 brew install --cask dnsswitcher
+xattr -d com.apple.quarantine /Applications/DNSSwitcher.app
 ```
 
 ### Manual
 
 1. Download the latest DMG from [Releases](https://github.com/kacigaya/dns-switcher/releases)
 2. Drag **DNS Switcher** to Applications
-3. Launch the app — a network icon appears in the menu bar
+3. Run `xattr -d com.apple.quarantine /Applications/DNSSwitcher.app`
+4. Launch the app — a network icon appears in the menu bar
 
 ### Build from source
 
