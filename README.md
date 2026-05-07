@@ -26,6 +26,7 @@
 ```bash
 brew tap kacigaya/tap
 brew install --cask dnsswitcher
+# Remove quarantine attribute to avoid Gatekeeper warnings
 xattr -d com.apple.quarantine /Applications/DNSSwitcher.app
 ```
 
