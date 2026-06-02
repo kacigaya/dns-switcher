@@ -25,36 +25,40 @@ struct SettingsView: View {
                 .frame(minHeight: 180)
                 .listStyle(.bordered)
 
-                HStack(spacing: 6) {
-                    Button(action: AddProfile) {
-                        Image(systemName: "plus")
-                            .frame(width: 20, height: 16)
-                    }
-                    .help("Add profile")
+                LiquidGlassContainer(spacing: 8) {
+                    HStack(spacing: 8) {
+                        Button(action: AddProfile) {
+                            Image(systemName: "plus")
+                                .frame(width: 20, height: 16)
+                        }
+                        .help("Add profile")
+                        .liquidGlassButtonStyle()
 
-                    Button(action: RemoveSelected) {
-                        Image(systemName: "minus")
-                            .frame(width: 20, height: 16)
-                    }
-                    .help("Remove profile")
-                    .disabled(selection == nil)
+                        Button(action: RemoveSelected) {
+                            Image(systemName: "minus")
+                                .frame(width: 20, height: 16)
+                        }
+                        .help("Remove profile")
+                        .liquidGlassButtonStyle()
+                        .disabled(selection == nil)
 
-                    Button {
-                        guard let sel = selection,
-                              let profile = profileStore.profiles.first(where: { $0.id == sel })
-                        else { return }
-                        editingProfile = profile
-                        showingEditor = true
-                    } label: {
-                        Image(systemName: "pencil")
-                            .frame(width: 20, height: 16)
-                    }
-                    .help("Edit profile")
-                    .disabled(selection == nil)
+                        Button {
+                            guard let sel = selection,
+                                  let profile = profileStore.profiles.first(where: { $0.id == sel })
+                            else { return }
+                            editingProfile = profile
+                            showingEditor = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .frame(width: 20, height: 16)
+                        }
+                        .help("Edit profile")
+                        .liquidGlassButtonStyle()
+                        .disabled(selection == nil)
 
-                    Spacer()
+                        Spacer()
+                    }
                 }
-                .buttonStyle(.borderless)
             }
 
             Section {
@@ -136,9 +140,25 @@ private struct ProfileRow: View {
 
             Spacer(minLength: 8)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .modifier(ActiveRowGlass(isActive: isActive))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(isActive ? "\(profile.name), active" : profile.name)
+    }
+}
+
+/// Adds a green-tinted Liquid Glass capsule behind the active profile row;
+/// inactive rows render unchanged.
+private struct ActiveRowGlass: ViewModifier {
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        if isActive {
+            content.liquidGlass(in: .capsule, tint: .green.opacity(0.6))
+        } else {
+            content
+        }
     }
 }
 
@@ -175,14 +195,18 @@ struct ProfileEditorView: View {
                     .font(.caption)
             }
 
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .keyboardShortcut(.cancelAction)
+            LiquidGlassContainer(spacing: 12) {
+                HStack {
+                    Button("Cancel") { onCancel() }
+                        .keyboardShortcut(.cancelAction)
+                        .liquidGlassButtonStyle()
 
-                Spacer()
+                    Spacer()
 
-                Button("Save", action: Save)
-                    .keyboardShortcut(.defaultAction)
+                    Button("Save", action: Save)
+                        .keyboardShortcut(.defaultAction)
+                        .liquidGlassButtonStyle(prominent: true)
+                }
             }
         }
         .padding(20)
