@@ -11,82 +11,27 @@ struct SettingsView: View {
     @State private var loginItemError: String?
 
     var body: some View {
-        Form {
-            Section("Profiles") {
-                List(selection: $selection) {
-                    ForEach(profileStore.profiles) { profile in
-                        ProfileRow(profile: profile, isActive: profile.id == profileStore.activeProfileId)
-                            .tag(profile.id)
-                    }
-                    .onMove { indices, destination in
-                        profileStore.profiles.move(fromOffsets: indices, toOffset: destination)
-                    }
-                }
-                .frame(minHeight: 180)
-                .listStyle(.bordered)
+        LiquidGlassContainer(spacing: 18) {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("DNS Switcher")
+                    .font(.system(.title2, design: .rounded).weight(.semibold))
 
-                LiquidGlassContainer(spacing: 8) {
-                    HStack(spacing: 8) {
-                        Button(action: AddProfile) {
-                            Image(systemName: "plus")
-                                .frame(width: 20, height: 16)
-                        }
-                        .help("Add profile")
-                        .liquidGlassButtonStyle()
-
-                        Button(action: RemoveSelected) {
-                            Image(systemName: "minus")
-                                .frame(width: 20, height: 16)
-                        }
-                        .help("Remove profile")
-                        .liquidGlassButtonStyle()
-                        .disabled(selection == nil)
-
-                        Button {
-                            guard let sel = selection,
-                                  let profile = profileStore.profiles.first(where: { $0.id == sel })
-                            else { return }
-                            editingProfile = profile
-                            showingEditor = true
-                        } label: {
-                            Image(systemName: "pencil")
-                                .frame(width: 20, height: 16)
-                        }
-                        .help("Edit profile")
-                        .liquidGlassButtonStyle()
-                        .disabled(selection == nil)
-
-                        Spacer()
-                    }
-                }
-            }
-
-            Section {
-                Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
-                Toggle("Launch at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { newValue in
-                        do {
-                            if newValue {
-                                try SMAppService.mainApp.register()
-                            } else {
-                                try SMAppService.mainApp.unregister()
-                            }
-                            loginItemError = nil
-                        } catch {
-                            launchAtLogin = !newValue
-                            loginItemError = error.localizedDescription
-                        }
-                    }
+                profilesCard
+                optionsCard
 
                 if let loginItemError {
                     Text(loginItemError)
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+
+                Spacer(minLength: 0)
+                footer
             }
+            .padding(22)
         }
-        .formStyle(.grouped)
-        .frame(width: 480, height: 460)
+        .frame(width: 460, height: 560)
+        .background(.ultraThinMaterial)
         .sheet(isPresented: $showingEditor) {
             if let profile = editingProfile {
                 ProfileEditorView(
@@ -102,6 +47,118 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Profiles
+
+    private var profilesCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PROFILES")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.8)
+
+            List {
+                ForEach(profileStore.profiles) { profile in
+                    ProfileRow(
+                        profile: profile,
+                        isActive: profile.id == profileStore.activeProfileId,
+                        isSelected: profile.id == selection
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { selection = profile.id }
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
+                    .listRowBackground(Color.clear)
+                }
+                .onMove { indices, destination in
+                    profileStore.profiles.move(fromOffsets: indices, toOffset: destination)
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .frame(height: 210)
+
+            toolbar
+        }
+        .padding(16)
+        .liquidGlass(in: .rect(cornerRadius: 20))
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 10) {
+            Button(action: AddProfile) {
+                Image(systemName: "plus").frame(width: 22, height: 18)
+            }
+            .help("Add profile")
+            .liquidGlassButtonStyle()
+
+            Button(action: RemoveSelected) {
+                Image(systemName: "minus").frame(width: 22, height: 18)
+            }
+            .help("Remove profile")
+            .liquidGlassButtonStyle()
+            .disabled(selection == nil)
+
+            Button(action: EditSelected) {
+                Image(systemName: "pencil").frame(width: 22, height: 18)
+            }
+            .help("Edit profile")
+            .liquidGlassButtonStyle()
+            .disabled(selection == nil)
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Options
+
+    private var optionsCard: some View {
+        VStack(spacing: 14) {
+            Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
+            Divider()
+            Toggle("Launch at login", isOn: $launchAtLogin)
+                .onChange(of: launchAtLogin) { newValue in
+                    do {
+                        if newValue {
+                            try SMAppService.mainApp.register()
+                        } else {
+                            try SMAppService.mainApp.unregister()
+                        }
+                        loginItemError = nil
+                    } catch {
+                        launchAtLogin = !newValue
+                        loginItemError = error.localizedDescription
+                    }
+                }
+        }
+        .toggleStyle(.switch)
+        .padding(18)
+        .liquidGlass(in: .rect(cornerRadius: 20))
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        HStack {
+            Button(role: .destructive) {
+                NSApp.terminate(nil)
+            } label: {
+                Label("Quit", systemImage: "power")
+            }
+            .keyboardShortcut("q")
+            .liquidGlassButtonStyle()
+
+            Spacer()
+
+            Button("Done") {
+                NSApp.keyWindow?.close()
+            }
+            .keyboardShortcut(.defaultAction)
+            .liquidGlassButtonStyle(prominent: true)
+        }
+    }
+
+    // MARK: - Actions
+
     private func AddProfile() {
         let newProfile = DnsProfile(name: "New Profile", servers: ["8.8.8.8"])
         profileStore.profiles.append(newProfile)
@@ -115,21 +172,31 @@ struct SettingsView: View {
         profileStore.profiles.removeAll { $0.id == sel }
         selection = nil
     }
+
+    private func EditSelected() {
+        guard let sel = selection,
+              let profile = profileStore.profiles.first(where: { $0.id == sel })
+        else { return }
+        editingProfile = profile
+        showingEditor = true
+    }
 }
 
 private struct ProfileRow: View {
     let profile: DnsProfile
     let isActive: Bool
+    let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Circle()
-                .fill(isActive ? Color.green : Color.secondary.opacity(0.25))
-                .frame(width: 8, height: 8)
+                .fill(isActive ? Color.green : Color.secondary.opacity(0.3))
+                .frame(width: 9, height: 9)
+                .shadow(color: isActive ? .green.opacity(0.6) : .clear, radius: 4)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.name)
-                    .font(.body)
+                    .font(.body.weight(.medium))
                     .lineLimit(1)
 
                 Text(profile.servers.joined(separator: ", "))
@@ -140,22 +207,29 @@ private struct ProfileRow: View {
 
             Spacer(minLength: 8)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .modifier(ActiveRowGlass(isActive: isActive))
+        .padding(.vertical, 9)
+        .padding(.horizontal, 14)
+        .modifier(SelectedRowGlass(isSelected: isSelected, isActive: isActive))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(isActive ? "\(profile.name), active" : profile.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
-/// Adds a green-tinted Liquid Glass capsule behind the active profile row;
-/// inactive rows render unchanged.
-private struct ActiveRowGlass: ViewModifier {
+/// Highlights a selected profile row with Liquid Glass; active rows get a green tint.
+private struct SelectedRowGlass: ViewModifier {
+    let isSelected: Bool
     let isActive: Bool
 
     func body(content: Content) -> some View {
-        if isActive {
-            content.liquidGlass(in: .capsule, tint: .green.opacity(0.6))
+        if isSelected {
+            content.liquidGlass(
+                in: .rect(cornerRadius: 12),
+                tint: isActive ? .green.opacity(0.55) : .accentColor.opacity(0.55),
+                interactive: true
+            )
+        } else if isActive {
+            content.background(.green.opacity(0.12), in: .rect(cornerRadius: 12))
         } else {
             content
         }
@@ -180,14 +254,13 @@ struct ProfileEditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Edit Profile")
-                .font(.headline)
+                .font(.system(.headline, design: .rounded))
 
-            Form {
+            VStack(spacing: 12) {
                 TextField("Name", text: $profile.name)
                 TextField("DNS servers", text: $serversText, prompt: Text("8.8.8.8, 1.1.1.1"))
             }
-            .formStyle(.grouped)
-            .frame(minHeight: 110)
+            .textFieldStyle(.roundedBorder)
 
             if let error = validationError {
                 Text(error)
@@ -209,8 +282,9 @@ struct ProfileEditorView: View {
                 }
             }
         }
-        .padding(20)
+        .padding(22)
         .frame(width: 380)
+        .background(.ultraThinMaterial)
     }
 
     private func Save() {
