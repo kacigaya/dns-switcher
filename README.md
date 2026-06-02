@@ -19,6 +19,16 @@
 - Launch at login support
 - IPv4 and IPv6 server validation
 
+## Built-in DNS profiles
+
+| Profile | Primary | Secondary |
+|---|---|---|
+| Cloudflare | `1.1.1.1` | `1.0.0.1` |
+| Quad9 | `9.9.9.9` | `149.112.112.112` |
+| AdGuard | `94.140.14.14` | `94.140.15.15` |
+
+Choose **Off (DHCP)** to clear these and return to your network's automatic DNS.
+
 ## Installation
 
 ### Homebrew
