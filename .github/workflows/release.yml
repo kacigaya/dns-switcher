@@ -12,6 +12,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Generate icon
         run: |
@@ -28,13 +34,31 @@ jobs:
           cp icon.png           DNSSwitcher.iconset/icon_512x512@2x.png
           iconutil -c icns DNSSwitcher.iconset -o DNSSwitcher.icns
 
-      - name: Build app bundle
-        run: make app
-
       - name: Create DMG
-        run: make dmg
+        run: make dmg VERSION="${{ steps.ver.outputs.version }}"
 
       - name: Upload DMG
         uses: softprops/action-gh-release@v2
         with:
           files: DNSSwitcher.dmg
+
+      - name: Update Homebrew cask
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          SHA=$(shasum -a 256 DNSSwitcher.dmg | awk '{print $1}')
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+
+          sed -i '' -E "s/^  version \".*\"/  version \"${VERSION}\"/" Formula/dnsswitcher.rb
+          sed -i '' -E "s/^  sha256 \".*\"/  sha256 \"${SHA}\"/" Formula/dnsswitcher.rb
+          git add Formula/dnsswitcher.rb
+          if git diff --cached --quiet; then
+            echo "Cask already up to date."
+          else
+            git commit -m "chore(cask): set v${VERSION} checksum [skip ci]"
+            git push origin main
+          fi
