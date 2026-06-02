@@ -1,6 +1,6 @@
 cask "dnsswitcher" do
-  version "1.3.0"
-  sha256 "1e2c0e4e63578f692dfcb15aeb35b243c91c101f732ec8ae36bd61802c2c986e"
+  version "1.3.1"
+  sha256 "07ee70a2ffae3632bc1719c28da4fb9e4eec41b0170ccc6973572b50a75b5683"
 
   url "https://github.com/kacigaya/dns-switcher/releases/download/v#{version}/DNSSwitcher.dmg"
   name "DNS Switcher"
