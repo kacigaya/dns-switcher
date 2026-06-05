@@ -5,8 +5,8 @@
 <h1 align="center">DNSSwitcher</h1>
 
 <p align="center">
-   <strong>A lightweight macOS menu bar app for instant DNS profile switching</strong><br>
-   <em>No Dock icon — lives entirely in your menu bar.</em>
+   <strong>A lightweight macOS menu bar app for DNS profile switching</strong><br>
+   <em>No Dock icon. It lives entirely in your menu bar.</em>
 </p>
 
 ## Features
@@ -27,7 +27,7 @@
 | Quad9 | `9.9.9.9` | `149.112.112.112` |
 | AdGuard | `94.140.14.14` | `94.140.15.15` |
 
-Choose **Off (DHCP)** to clear these and return to your network's automatic DNS.
+Choose Off (DHCP) to clear these and return to your network's automatic DNS.
 
 ## Installation
 
@@ -43,9 +43,9 @@ xattr -d com.apple.quarantine /Applications/DNSSwitcher.app
 ### Manual
 
 1. Download the latest DMG from [Releases](https://github.com/kacigaya/dns-switcher/releases)
-2. Drag **DNS Switcher** to Applications
+2. Drag DNS Switcher to Applications
 3. Run `xattr -d com.apple.quarantine /Applications/DNSSwitcher.app`
-4. Launch the app — a network icon appears in the menu bar
+4. Launch the app. A network icon appears in the menu bar.
 
 ### Build from source
 
@@ -58,7 +58,7 @@ open ".build/release/DNSSwitcher.app"
 
 ## Usage
 
-Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose **Off (DHCP)** to reset to automatic DNS. Open **Preferences** to manage profiles and settings.
+Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings.
 
 ## Why does it ask for my admin password?
 
