@@ -14,26 +14,11 @@ enum NetworkInterface {
     }
 
     private static func ListAllServices() -> [String] {
-        let task = Process()
-        let pipe = Pipe()
-
-        task.executableURL = URL(fileURLWithPath: "/usr/sbin/networksetup")
-        task.arguments = ["-listallnetworkservices"]
-        task.standardOutput = pipe
-        task.standardError = Pipe()
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            return []
-        }
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let output = String(data: data, encoding: .utf8) else { return [] }
+        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-listallnetworkservices"])
+        guard result.exitCode == 0 else { return [] }
 
         return
-            output
+            result.output
             .components(separatedBy: "\n")
             .dropFirst()
             .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -42,26 +27,11 @@ enum NetworkInterface {
 
     /// Check if a service has an IP address assigned (meaning it's connected).
     private static func IsConnected(_ service: String) -> Bool {
-        let task = Process()
-        let pipe = Pipe()
-
-        task.executableURL = URL(fileURLWithPath: "/usr/sbin/networksetup")
-        task.arguments = ["-getinfo", service]
-        task.standardOutput = pipe
-        task.standardError = Pipe()
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            return false
-        }
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let output = String(data: data, encoding: .utf8) else { return false }
+        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-getinfo", service])
+        guard result.exitCode == 0 else { return false }
 
         // Look for a real IP address line (not "none")
-        for line in output.components(separatedBy: "\n") {
+        for line in result.output.components(separatedBy: "\n") {
             if line.hasPrefix("IP address:") {
                 let value = line.replacingOccurrences(of: "IP address:", with: "").trimmingCharacters(in: .whitespaces)
                 if !value.isEmpty && value != "none" {

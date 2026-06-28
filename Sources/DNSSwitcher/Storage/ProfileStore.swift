@@ -63,7 +63,7 @@ final class ProfileStore: ObservableObject {
         return true
     }
 
-    private static func isValidIPAddress(_ string: String) -> Bool {
+    static func isValidIPAddress(_ string: String) -> Bool {
         return string.withCString { cString in
             var ipv4Address = sockaddr_in()
             if inet_pton(AF_INET, cString, &ipv4Address.sin_addr) == 1 { return true }

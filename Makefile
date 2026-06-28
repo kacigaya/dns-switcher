@@ -1,6 +1,6 @@
 APP_NAME = DNSSwitcher
 BUNDLE_ID = com.gayakaci.dns-switcher
-VERSION = 1.3.1
+VERSION = 1.3.2
 BUILD_DIR = .build/apple/Products/Release
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
 DMG_NAME = DNSSwitcher.dmg

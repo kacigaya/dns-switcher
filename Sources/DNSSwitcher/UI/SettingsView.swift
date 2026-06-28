@@ -313,7 +313,7 @@ struct ProfileEditorView: View {
         }
 
         for server in servers {
-            if !IsValidIP(server) {
+            if !ProfileStore.isValidIPAddress(server) {
                 validationError = "\"\(server)\" is not a valid IPv4 or IPv6 address."
                 return
             }
@@ -322,13 +322,5 @@ struct ProfileEditorView: View {
         profile.servers = servers
         validationError = nil
         onSave(profile)
-    }
-
-    private func IsValidIP(_ string: String) -> Bool {
-        var sin = sockaddr_in()
-        if inet_pton(AF_INET, string, &sin.sin_addr) == 1 { return true }
-        var sin6 = sockaddr_in6()
-        if inet_pton(AF_INET6, string, &sin6.sin6_addr) == 1 { return true }
-        return false
     }
 }
