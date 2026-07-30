@@ -9,18 +9,29 @@ final class MenuBuilder: NSObject {
         self.onShowSettings = onShowSettings
     }
 
-    func BuildMenu() -> NSMenu {
-        let menu = NSMenu()
+    func BuildMenu(_ menu: NSMenu) {
+        menu.removeAllItems()
 
         let interfaces = NetworkInterface.ListActiveInterfaces()
 
         if interfaces.isEmpty {
+            profileStore.activeProfileId = nil
             let noIfaceItem = NSMenuItem(title: "No active interfaces", action: nil, keyEquivalent: "")
             noIfaceItem.isEnabled = false
             menu.addItem(noIfaceItem)
         } else {
             // Detect current DNS to show checkmark
-            let currentDNS = DnsManager.GetCurrentDNS(for: interfaces[0])
+            let checkedInterfaces = profileStore.applyToAll ? interfaces : Array(interfaces.prefix(1))
+            let currentDNS = checkedInterfaces.compactMap { DnsManager.GetCurrentDNS(for: $0) }
+            let didReadAll = currentDNS.count == checkedInterfaces.count
+            let activeProfileId = didReadAll
+                ? profileStore.profiles.first {
+                    profile in currentDNS.allSatisfy { DnsManager.DnsServersMatch(profile.servers, $0) }
+                }?.id
+                : nil
+            if profileStore.activeProfileId != activeProfileId {
+                profileStore.activeProfileId = activeProfileId
+            }
 
             for profile in profileStore.profiles {
                 let item = NSMenuItem(
@@ -31,13 +42,8 @@ final class MenuBuilder: NSObject {
                 item.target = self
                 item.representedObject = profile.id
 
-                if Set(profile.servers) == Set(currentDNS) {
+                if profile.id == activeProfileId {
                     item.state = .on
-                    if profileStore.activeProfileId != profile.id {
-                        DispatchQueue.main.async {
-                            self.profileStore.activeProfileId = profile.id
-                        }
-                    }
                 }
 
                 menu.addItem(item)
@@ -51,7 +57,7 @@ final class MenuBuilder: NSObject {
                 keyEquivalent: ""
             )
             offItem.target = self
-            if currentDNS.isEmpty {
+            if didReadAll && currentDNS.allSatisfy(\.isEmpty) {
                 offItem.state = .on
             }
             menu.addItem(offItem)
@@ -75,7 +81,6 @@ final class MenuBuilder: NSObject {
         quitItem.target = self
         menu.addItem(quitItem)
 
-        return menu
     }
 
     @objc private func SelectProfile(_ sender: NSMenuItem) {
@@ -83,8 +88,11 @@ final class MenuBuilder: NSObject {
               let profile = profileStore.profiles.first(where: { $0.id == profileId })
         else { return }
 
-        DnsManager.ApplyProfile(profile, toAllInterfaces: profileStore.applyToAll)
-        profileStore.activeProfileId = profile.id
+        if DnsManager.ApplyProfile(profile, toAllInterfaces: profileStore.applyToAll) {
+            profileStore.activeProfileId = profile.id
+        } else {
+            profileStore.activeProfileId = nil
+        }
     }
 
     @objc private func ResetDNS(_ sender: NSMenuItem) {

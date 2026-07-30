@@ -26,6 +26,7 @@ icns:
 	iconutil -c icns $(APP_NAME).iconset
 
 app: build icns
+	rm -rf "$(APP_BUNDLE)"
 	mkdir -p "$(APP_BUNDLE)/Contents/MacOS"
 	mkdir -p "$(APP_BUNDLE)/Contents/Resources"
 	cp $(BUILD_DIR)/DNSSwitcher "$(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)"
@@ -60,7 +61,7 @@ dmg: app
 	hdiutil create -volname "$(DMG_VOL)" -srcfolder .build/dmg-staging \
 		-ov -format UDRW -fs HFS+ .build/$(APP_NAME)-rw.dmg
 	# Mount and configure layout
-	hdiutil attach .build/$(APP_NAME)-rw.dmg
+	hdiutil attach -nobrowse .build/$(APP_NAME)-rw.dmg
 	mkdir -p "/Volumes/$(DMG_VOL)/.background"
 	cp .build/dmg-resources/background.png "/Volumes/$(DMG_VOL)/.background/background.png"
 	osascript scripts/configure-dmg.applescript "$(DMG_VOL)" "$(APP_NAME)"

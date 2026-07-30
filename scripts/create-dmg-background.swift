@@ -19,7 +19,6 @@ let arrowPath = NSBezierPath()
 let centerY = CGFloat(height) / 2.0
 let arrowLeft: CGFloat = 260
 let arrowRight: CGFloat = 400
-let arrowMidX = (arrowLeft + arrowRight) / 2.0
 let shaftHalf: CGFloat = 12
 let headHalf: CGFloat = 30
 let headStart: CGFloat = 350

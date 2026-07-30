@@ -1,28 +1,28 @@
 import Foundation
 
 enum NetworkInterface {
-    /// Returns network services that are currently connected (have an IP address),
-    /// sorted so Wi-Fi and Ethernet appear first.
+    /// Returns connected network services in the user's configured service order.
     static func ListActiveInterfaces() -> [String] {
-        let allServices = ListAllServices()
-        let connected = allServices.filter { IsConnected($0) }
-
-        // Sort: Wi-Fi and Ethernet first, then others
-        return connected.sorted { a, b in
-            Priority(a) < Priority(b)
-        }
+        ListAllServices().filter { IsConnected($0) }
     }
 
     private static func ListAllServices() -> [String] {
-        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-listallnetworkservices"])
+        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-listnetworkserviceorder"])
         guard result.exitCode == 0 else { return [] }
 
-        return
-            result.output
-            .components(separatedBy: "\n")
-            .dropFirst()
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("*") }
+        return ParseServiceOrder(result.output)
+    }
+
+    static func ParseServiceOrder(_ output: String) -> [String] {
+        output.components(separatedBy: "\n").compactMap { line in
+            let line = line.trimmingCharacters(in: .whitespaces)
+            guard line.hasPrefix("("),
+                  !line.hasPrefix("(*)"),
+                  let close = line.firstIndex(of: ")")
+            else { return nil }
+            let name = String(line[line.index(after: close)...]).trimmingCharacters(in: .whitespaces)
+            return name.isEmpty ? nil : name
+        }
     }
 
     /// Check if a service has an IP address assigned (meaning it's connected).
@@ -30,22 +30,14 @@ enum NetworkInterface {
         let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-getinfo", service])
         guard result.exitCode == 0 else { return false }
 
-        // Look for a real IP address line (not "none")
         for line in result.output.components(separatedBy: "\n") {
-            if line.hasPrefix("IP address:") {
-                let value = line.replacingOccurrences(of: "IP address:", with: "").trimmingCharacters(in: .whitespaces)
-                if !value.isEmpty && value != "none" {
+            for prefix in ["IP address:", "IPv6 IP address:"] where line.hasPrefix(prefix) {
+                let value = String(line.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+                if !value.isEmpty && value.lowercased() != "none" {
                     return true
                 }
             }
         }
         return false
-    }
-
-    private static func Priority(_ service: String) -> Int {
-        let lower = service.lowercased()
-        if lower == "wi-fi" { return 0 }
-        if lower.contains("ethernet") || lower.contains("lan") { return 1 }
-        return 2
     }
 }

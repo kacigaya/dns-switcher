@@ -11,6 +11,10 @@ let package = Package(
         .executableTarget(
             name: "DNSSwitcher",
             path: "Sources/DNSSwitcher"
+        ),
+        .testTarget(
+            name: "DNSSwitcherTests",
+            dependencies: ["DNSSwitcher"]
         )
     ]
 )

@@ -10,34 +10,30 @@ enum DnsManager {
     static func RunCommand(_ executable: String, args: [String]) -> CommandResult {
         let task = Process()
         let pipe = Pipe()
-        let errPipe = Pipe()
 
         task.executableURL = URL(fileURLWithPath: executable)
         task.arguments = args
         task.standardOutput = pipe
-        task.standardError = errPipe
+        task.standardError = pipe
 
         do {
             try task.run()
-            task.waitUntilExit()
         } catch {
             return CommandResult(output: error.localizedDescription, exitCode: -1)
         }
 
-        let outData = pipe.fileHandleForReading.readDataToEndOfFile()
-        let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(data: outData, encoding: .utf8) ?? ""
-        let errOutput = String(data: errData, encoding: .utf8) ?? ""
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        task.waitUntilExit()
 
         return CommandResult(
-            output: output.isEmpty ? errOutput : output,
+            output: String(data: data, encoding: .utf8) ?? "",
             exitCode: task.terminationStatus
         )
     }
 
     /// Wraps a single argument in single quotes, escaping any embedded single quotes.
     /// This prevents shell interpretation of metacharacters like $, `, !, ;, |, &, etc.
-    private static func ShellQuote(_ arg: String) -> String {
+    static func ShellQuote(_ arg: String) -> String {
         let escaped = arg.replacingOccurrences(of: "'", with: "'\\''")
         return "'\(escaped)'"
     }
@@ -73,21 +69,21 @@ enum DnsManager {
         return CommandResult(output: result.stringValue ?? "", exitCode: 0)
     }
 
-    static func ApplyProfile(_ profile: DnsProfile, toAllInterfaces: Bool) {
+    @discardableResult
+    static func ApplyProfile(_ profile: DnsProfile, toAllInterfaces: Bool) -> Bool {
         ApplyDns(
             servers: profile.servers,
             action: "set DNS",
-            noticeAction: "apply",
             failTitle: "DNS Change Partially Failed",
             toAllInterfaces: toAllInterfaces
         )
     }
 
-    static func ResetToDefault(toAllInterfaces: Bool) {
+    @discardableResult
+    static func ResetToDefault(toAllInterfaces: Bool) -> Bool {
         ApplyDns(
             servers: ["empty"],
             action: "reset DNS",
-            noticeAction: "reset",
             failTitle: "DNS Reset Partially Failed",
             toAllInterfaces: toAllInterfaces
         )
@@ -96,30 +92,24 @@ enum DnsManager {
     private static func ApplyDns(
         servers: [String],
         action: String,
-        noticeAction: String,
         failTitle: String,
         toAllInterfaces: Bool
-    ) {
+    ) -> Bool {
         let interfaces = toAllInterfaces
             ? NetworkInterface.ListActiveInterfaces()
             : Array(NetworkInterface.ListActiveInterfaces().prefix(1))
 
         guard !interfaces.isEmpty else {
             ShowAlert(title: "No Active Interfaces", message: "Could not find any active network interfaces.")
-            return
+            return false
         }
 
         var failures: [String] = []
-        var didShowPermissionNotice = false
         for iface in interfaces {
             let args = ["-setdnsservers", iface] + servers
             let result = RunCommand("/usr/sbin/networksetup", args: args)
 
             if result.exitCode != 0 {
-                if !didShowPermissionNotice {
-                    showPermissionNotice(for: noticeAction)
-                    didShowPermissionNotice = true
-                }
                 let privResult = RunPrivileged(args: ["/usr/sbin/networksetup"] + args)
 
                 if privResult.exitCode != 0 {
@@ -138,44 +128,49 @@ enum DnsManager {
         if !failures.isEmpty {
             ShowAlert(title: failTitle, message: failures.joined(separator: "\n"))
         }
+        return failures.isEmpty
     }
 
-    static func GetCurrentDNS(for interface: String) -> [String] {
+    static func GetCurrentDNS(for interface: String) -> [String]? {
         let result = RunCommand("/usr/sbin/networksetup", args: ["-getdnsservers", interface])
-        guard result.exitCode == 0 else { return [] }
+        guard result.exitCode == 0 else { return nil }
 
-        let lines = result.output
+        return ParseDnsServers(result.output)
+    }
+
+    static func ParseDnsServers(_ output: String) -> [String] {
+        output
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+            .filter { ProfileStore.isValidIPAddress($0) }
+    }
 
-        // "There aren't any DNS Servers set on ..." means DHCP
-        if lines.first?.contains("aren't any") == true {
-            return []
+    static func DnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
+        lhs.count == rhs.count && zip(lhs, rhs).allSatisfy {
+            guard let left = ProfileStore.normalizedIPAddress($0),
+                  let right = ProfileStore.normalizedIPAddress($1)
+            else { return false }
+            return left == right
         }
-
-        return lines
     }
 
     private static func FlushDnsCache() {
         _ = RunCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
     }
 
-    private static func showPermissionNotice(for action: String) {
-        ShowAlert(
-            title: "Administrator Permission Required",
-            message: "DNSSwitcher needs administrator permission to \(action) DNS settings."
-        )
-    }
-
     private static func ShowAlert(title: String, message: String) {
-        DispatchQueue.main.async {
+        let show = {
             let alert = NSAlert()
             alert.messageText = title
             alert.informativeText = message
             alert.alertStyle = .warning
             alert.addButton(withTitle: "OK")
             alert.runModal()
+        }
+        if Thread.isMainThread {
+            show()
+        } else {
+            DispatchQueue.main.async(execute: show)
         }
     }
 }

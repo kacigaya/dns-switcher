@@ -40,7 +40,10 @@ struct SettingsView: View {
                 ) { updated in
                     if let idx = profileStore.profiles.firstIndex(where: { $0.id == updated.id }) {
                         profileStore.profiles[idx] = updated
+                    } else {
+                        profileStore.profiles.append(updated)
                     }
+                    selection = updated.id
                     showingEditor = false
                 }
             }
@@ -115,20 +118,10 @@ struct SettingsView: View {
         VStack(spacing: 14) {
             Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
             Divider()
-            Toggle("Launch at login", isOn: $launchAtLogin)
-                .onChange(of: launchAtLogin) { newValue in
-                    do {
-                        if newValue {
-                            try SMAppService.mainApp.register()
-                        } else {
-                            try SMAppService.mainApp.unregister()
-                        }
-                        loginItemError = nil
-                    } catch {
-                        launchAtLogin = !newValue
-                        loginItemError = error.localizedDescription
-                    }
-                }
+            Toggle(
+                "Launch at login",
+                isOn: Binding(get: { launchAtLogin }, set: SetLaunchAtLogin)
+            )
         }
         .toggleStyle(.switch)
         .padding(18)
@@ -161,8 +154,6 @@ struct SettingsView: View {
 
     private func AddProfile() {
         let newProfile = DnsProfile(name: "New Profile", servers: ["8.8.8.8"])
-        profileStore.profiles.append(newProfile)
-        selection = newProfile.id
         editingProfile = newProfile
         showingEditor = true
     }
@@ -170,6 +161,9 @@ struct SettingsView: View {
     private func RemoveSelected() {
         guard let sel = selection else { return }
         profileStore.profiles.removeAll { $0.id == sel }
+        if profileStore.activeProfileId == sel {
+            profileStore.activeProfileId = nil
+        }
         selection = nil
     }
 
@@ -179,6 +173,20 @@ struct SettingsView: View {
         else { return }
         editingProfile = profile
         showingEditor = true
+    }
+
+    private func SetLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            launchAtLogin = enabled
+            loginItemError = nil
+        } catch {
+            loginItemError = error.localizedDescription
+        }
     }
 }
 
@@ -295,8 +303,8 @@ struct ProfileEditorView: View {
             return
         }
 
-        if trimmedName.count > 50 {
-            validationError = "Profile name must be 50 characters or fewer."
+        if trimmedName.count > ProfileStore.maxProfileNameLength {
+            validationError = "Profile name must be \(ProfileStore.maxProfileNameLength) characters or fewer."
             return
         }
 

@@ -53,7 +53,7 @@ xattr -d com.apple.quarantine /Applications/DNSSwitcher.app
 git clone https://github.com/kacigaya/dns-switcher.git
 cd dns-switcher
 make app
-open ".build/release/DNSSwitcher.app"
+open ".build/apple/Products/Release/DNSSwitcher.app"
 ```
 
 ## Usage
@@ -67,3 +67,4 @@ macOS requires administrator privileges to change DNS settings via `networksetup
 ## Requirements
 
 - macOS 13.0 (Ventura) or later
+- Building from source requires Xcode 26 or later on macOS 15.6 or later

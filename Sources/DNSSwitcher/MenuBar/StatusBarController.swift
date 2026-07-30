@@ -1,32 +1,30 @@
 import AppKit
-import Combine
 
-final class StatusBarController {
+final class StatusBarController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
-    private let profileStore: ProfileStore
-    private var cancellables = Set<AnyCancellable>()
     private let menuBuilder: MenuBuilder
+    private let menu = NSMenu()
 
     init(profileStore: ProfileStore, onShowSettings: @escaping () -> Void) {
-        self.profileStore = profileStore
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         self.menuBuilder = MenuBuilder(profileStore: profileStore, onShowSettings: onShowSettings)
+        super.init()
 
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "network", accessibilityDescription: "DNS Switcher")
             button.image?.isTemplate = true
         }
 
+        menu.delegate = self
+        statusItem.menu = menu
         RebuildMenu()
+    }
 
-        profileStore.$profiles
-            .merge(with: profileStore.$activeProfileId.map { _ in profileStore.profiles })
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.RebuildMenu() }
-            .store(in: &cancellables)
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        RebuildMenu()
     }
 
     private func RebuildMenu() {
-        statusItem.menu = menuBuilder.BuildMenu()
+        menuBuilder.BuildMenu(menu)
     }
 }
