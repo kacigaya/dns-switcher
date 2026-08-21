@@ -96,8 +96,9 @@ final class MenuBuilder: NSObject {
     }
 
     @objc private func ResetDNS(_ sender: NSMenuItem) {
-        DnsManager.ResetToDefault(toAllInterfaces: profileStore.applyToAll)
-        profileStore.activeProfileId = nil
+        if DnsManager.ResetToDefault(toAllInterfaces: profileStore.applyToAll) {
+            profileStore.activeProfileId = nil
+        }
     }
 
     @objc private func OpenPreferences(_ sender: NSMenuItem) {

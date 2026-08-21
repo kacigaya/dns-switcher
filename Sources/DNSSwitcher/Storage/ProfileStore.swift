@@ -32,14 +32,21 @@ final class ProfileStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
             let validated = decoded.filter { Self.isValidProfile($0) }
             self.profiles = decoded.isEmpty ? [] : (validated.isEmpty ? DnsProfile.defaults : validated)
+            if self.profiles != decoded,
+               let sanitizedData = try? JSONEncoder().encode(self.profiles) {
+                UserDefaults.standard.set(sanitizedData, forKey: Self.profilesKey)
+            }
         } else {
             self.profiles = DnsProfile.defaults
         }
 
-        if let idString = UserDefaults.standard.string(forKey: Self.activeProfileIdKey) {
-            self.activeProfileId = UUID(uuidString: idString)
+        if let idString = UserDefaults.standard.string(forKey: Self.activeProfileIdKey),
+           let id = UUID(uuidString: idString),
+           self.profiles.contains(where: { $0.id == id }) {
+            self.activeProfileId = id
         } else {
             self.activeProfileId = nil
+            UserDefaults.standard.removeObject(forKey: Self.activeProfileIdKey)
         }
     }
 
