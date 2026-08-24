@@ -9,50 +9,53 @@ final class ProfileStore: ObservableObject {
     private static let applyToAllKey = "apply_to_all_interfaces"
     static let maxProfileNameLength = 50
 
+    private let defaults: UserDefaults
+
     @Published var profiles: [DnsProfile] {
         didSet { save() }
     }
 
     @Published var activeProfileId: UUID? {
         didSet {
-            UserDefaults.standard.set(activeProfileId?.uuidString, forKey: Self.activeProfileIdKey)
+            defaults.set(activeProfileId?.uuidString, forKey: Self.activeProfileIdKey)
         }
     }
 
     @Published var applyToAll: Bool {
         didSet {
-            UserDefaults.standard.set(applyToAll, forKey: Self.applyToAllKey)
+            defaults.set(applyToAll, forKey: Self.applyToAllKey)
         }
     }
 
-    init() {
-        self.applyToAll = UserDefaults.standard.bool(forKey: Self.applyToAllKey)
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        self.applyToAll = defaults.bool(forKey: Self.applyToAllKey)
 
-        if let data = UserDefaults.standard.data(forKey: Self.profilesKey),
+        if let data = defaults.data(forKey: Self.profilesKey),
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
             let validated = decoded.filter { Self.isValidProfile($0) }
             self.profiles = decoded.isEmpty ? [] : (validated.isEmpty ? DnsProfile.defaults : validated)
             if self.profiles != decoded,
                let sanitizedData = try? JSONEncoder().encode(self.profiles) {
-                UserDefaults.standard.set(sanitizedData, forKey: Self.profilesKey)
+                defaults.set(sanitizedData, forKey: Self.profilesKey)
             }
         } else {
             self.profiles = DnsProfile.defaults
         }
 
-        if let idString = UserDefaults.standard.string(forKey: Self.activeProfileIdKey),
+        if let idString = defaults.string(forKey: Self.activeProfileIdKey),
            let id = UUID(uuidString: idString),
            self.profiles.contains(where: { $0.id == id }) {
             self.activeProfileId = id
         } else {
             self.activeProfileId = nil
-            UserDefaults.standard.removeObject(forKey: Self.activeProfileIdKey)
+            defaults.removeObject(forKey: Self.activeProfileIdKey)
         }
     }
 
     private func save() {
         if let data = try? JSONEncoder().encode(profiles) {
-            UserDefaults.standard.set(data, forKey: Self.profilesKey)
+            defaults.set(data, forKey: Self.profilesKey)
         }
     }
 
