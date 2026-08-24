@@ -1,7 +1,6 @@
 import XCTest
 @testable import DNSSwitcher
 
-@MainActor
 final class ProfileStoreTests: XCTestCase {
     private var suiteName = ""
     private var defaults = UserDefaults.standard
@@ -17,14 +16,17 @@ final class ProfileStoreTests: XCTestCase {
         super.tearDown()
     }
 
+    @MainActor
     private func store() -> ProfileStore {
         ProfileStore(defaults: defaults)
     }
 
+    @MainActor
     func testFirstLaunchSeedsBuiltInProfiles() {
         XCTAssertEqual(store().profiles.map(\.name), DnsProfile.defaults.map(\.name))
     }
 
+    @MainActor
     func testProfilesPersistAcrossInstances() {
         let first = store()
         first.profiles = [DnsProfile(name: "Home", servers: ["10.0.0.1"])]
@@ -32,6 +34,7 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertEqual(store().profiles.map(\.name), ["Home"])
     }
 
+    @MainActor
     func testEmptyProfileListIsPreserved() {
         let first = store()
         first.profiles = []
@@ -39,6 +42,7 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertEqual(store().profiles, [])
     }
 
+    @MainActor
     func testCorruptProfilesAreDiscardedOnLoad() {
         let good = DnsProfile(name: "Home", servers: ["10.0.0.1"])
         let bad = DnsProfile(name: "Broken", servers: ["not-an-ip"])
@@ -49,6 +53,7 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertEqual(store().profiles, [good])
     }
 
+    @MainActor
     func testAllProfilesInvalidFallsBackToDefaults() {
         let bad = DnsProfile(name: "", servers: [])
         defaults.set(try? JSONEncoder().encode([bad]), forKey: "dns_profiles")
@@ -56,12 +61,14 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertEqual(store().profiles.map(\.name), DnsProfile.defaults.map(\.name))
     }
 
+    @MainActor
     func testUnreadableDataFallsBackToDefaults() {
         defaults.set(Data("not json".utf8), forKey: "dns_profiles")
 
         XCTAssertEqual(store().profiles.map(\.name), DnsProfile.defaults.map(\.name))
     }
 
+    @MainActor
     func testActiveProfileIdPersistsWhenTheProfileStillExists() {
         let first = store()
         let profile = DnsProfile(name: "Home", servers: ["10.0.0.1"])
@@ -71,6 +78,7 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertEqual(store().activeProfileId, profile.id)
     }
 
+    @MainActor
     func testStaleActiveProfileIdIsCleared() {
         let first = store()
         first.profiles = [DnsProfile(name: "Home", servers: ["10.0.0.1"])]
@@ -81,6 +89,7 @@ final class ProfileStoreTests: XCTestCase {
         XCTAssertNil(defaults.string(forKey: "active_profile_id"))
     }
 
+    @MainActor
     func testApplyToAllPersists() {
         XCTAssertFalse(store().applyToAll)
 

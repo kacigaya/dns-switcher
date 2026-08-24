@@ -1,5 +1,6 @@
-import SwiftUI
+import AppKit
 import ServiceManagement
+import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var profileStore: ProfileStore
