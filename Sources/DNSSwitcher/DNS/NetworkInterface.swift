@@ -2,18 +2,18 @@ import Foundation
 
 enum NetworkInterface {
     /// Returns connected network services in the user's configured service order.
-    static func ListActiveInterfaces() -> [String] {
-        ListAllServices().filter { IsConnected($0) }
+    static func listActiveInterfaces() -> [String] {
+        listAllServices().filter { isConnected($0) }
     }
 
-    private static func ListAllServices() -> [String] {
-        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-listnetworkserviceorder"])
+    private static func listAllServices() -> [String] {
+        let result = DnsManager.runCommand("/usr/sbin/networksetup", args: ["-listnetworkserviceorder"])
         guard result.exitCode == 0 else { return [] }
 
-        return ParseServiceOrder(result.output)
+        return parseServiceOrder(result.output)
     }
 
-    static func ParseServiceOrder(_ output: String) -> [String] {
+    static func parseServiceOrder(_ output: String) -> [String] {
         output.components(separatedBy: "\n").compactMap { line in
             let line = line.trimmingCharacters(in: .whitespaces)
             guard line.hasPrefix("("),
@@ -26,8 +26,8 @@ enum NetworkInterface {
     }
 
     /// Check if a service has an IP address assigned (meaning it's connected).
-    private static func IsConnected(_ service: String) -> Bool {
-        let result = DnsManager.RunCommand("/usr/sbin/networksetup", args: ["-getinfo", service])
+    private static func isConnected(_ service: String) -> Bool {
+        let result = DnsManager.runCommand("/usr/sbin/networksetup", args: ["-getinfo", service])
         guard result.exitCode == 0 else { return false }
 
         for line in result.output.components(separatedBy: "\n") {

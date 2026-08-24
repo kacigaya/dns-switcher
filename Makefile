@@ -1,6 +1,8 @@
 APP_NAME = DNSSwitcher
 BUNDLE_ID = com.gayakaci.dns-switcher
-VERSION = 1.3.4
+VERSION = 1.4.0
+MIN_MACOS = 13.0
+COPYRIGHT = Copyright © 2026 Gaya KACI. MIT licensed.
 BUILD_DIR = .build/apple/Products/Release
 APP_BUNDLE = $(BUILD_DIR)/$(APP_NAME).app
 DMG_NAME = DNSSwitcher.dmg
@@ -43,6 +45,10 @@ app: build icns
 	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '$(VERSION)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string '$(MIN_MACOS)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion '$(MIN_MACOS)'" "$(APP_BUNDLE)/Contents/Info.plist"
+	/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string '$(COPYRIGHT)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
+	/usr/libexec/PlistBuddy -c "Set :NSHumanReadableCopyright '$(COPYRIGHT)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || true
 	/usr/libexec/PlistBuddy -c "Set :CFBundleIconFile '$(APP_NAME)'" "$(APP_BUNDLE)/Contents/Info.plist"
 	codesign --force --sign - "$(APP_BUNDLE)"

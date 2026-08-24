@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let profileStore = ProfileStore()
     private var statusBarController: StatusBarController?
@@ -15,14 +16,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusBarController = StatusBarController(profileStore: profileStore) { [weak self] in
-            self?.ShowSettings()
+            self?.showSettings()
         }
     }
 
-    private func ShowSettings() {
+    private func showSettings() {
         if let window = settingsWindow {
             window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            activate()
             return
         }
 
@@ -43,9 +44,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
         window.isReleasedWhenClosed = false
+        // The window is recreated on demand, so there is no state to restore.
+        window.isRestorable = false
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        activate()
 
         self.settingsWindow = window
+    }
+
+    private func activate() {
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }

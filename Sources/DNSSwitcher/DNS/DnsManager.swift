@@ -7,7 +7,7 @@ enum DnsManager {
         let exitCode: Int32
     }
 
-    static func RunCommand(_ executable: String, args: [String]) -> CommandResult {
+    static func runCommand(_ executable: String, args: [String]) -> CommandResult {
         let task = Process()
         let pipe = Pipe()
 
@@ -33,22 +33,27 @@ enum DnsManager {
 
     /// Wraps a single argument in single quotes, escaping any embedded single quotes.
     /// This prevents shell interpretation of metacharacters like $, `, !, ;, |, &, etc.
-    static func ShellQuote(_ arg: String) -> String {
+    static func shellQuote(_ arg: String) -> String {
         let escaped = arg.replacingOccurrences(of: "'", with: "'\\''")
         return "'\(escaped)'"
     }
 
     /// Escapes a pre-quoted shell command for embedding inside an AppleScript
     /// `do shell script "..."` double-quoted string.
-    private static func EscapeForAppleScript(_ command: String) -> String {
+    private static func escapeForAppleScript(_ command: String) -> String {
         return command
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    static func RunPrivileged(args: [String]) -> CommandResult {
-        let command = args.map { ShellQuote($0) }.joined(separator: " ")
-        let escapedCommand = EscapeForAppleScript(command)
+    /// Quotes each argument and joins them into a single shell command line.
+    static func shellCommand(_ args: [String]) -> String {
+        args.map { shellQuote($0) }.joined(separator: " ")
+    }
+
+    @MainActor
+    static func runPrivileged(command: String) -> CommandResult {
+        let escapedCommand = escapeForAppleScript(command)
 
         let script = """
             do shell script "\(escapedCommand)" with administrator privileges
@@ -69,108 +74,113 @@ enum DnsManager {
         return CommandResult(output: result.stringValue ?? "", exitCode: 0)
     }
 
+    @MainActor
     @discardableResult
-    static func ApplyProfile(_ profile: DnsProfile, toAllInterfaces: Bool) -> Bool {
-        ApplyDns(
+    static func applyProfile(_ profile: DnsProfile, to interfaces: [String]) -> Bool {
+        applyDns(
             servers: profile.servers,
+            to: interfaces,
             action: "set DNS",
-            failTitle: "DNS Change Partially Failed",
-            toAllInterfaces: toAllInterfaces
+            failTitle: "DNS Change Partially Failed"
         )
     }
 
+    @MainActor
     @discardableResult
-    static func ResetToDefault(toAllInterfaces: Bool) -> Bool {
-        ApplyDns(
+    static func resetToDefault(on interfaces: [String]) -> Bool {
+        // "empty" is networksetup's literal keyword for clearing DNS servers.
+        applyDns(
             servers: ["empty"],
+            to: interfaces,
             action: "reset DNS",
-            failTitle: "DNS Reset Partially Failed",
-            toAllInterfaces: toAllInterfaces
+            failTitle: "DNS Reset Partially Failed"
         )
     }
 
-    private static func ApplyDns(
+    /// Runs `networksetup -setdnsservers` for each interface, escalating to a
+    /// single administrator prompt for the interfaces that need one.
+    ///
+    /// Stays on the main actor because it may show an alert and because
+    /// `NSAppleScript` is not safe to use from arbitrary threads.
+    @MainActor
+    private static func applyDns(
         servers: [String],
+        to interfaces: [String],
         action: String,
-        failTitle: String,
-        toAllInterfaces: Bool
+        failTitle: String
     ) -> Bool {
-        let interfaces = toAllInterfaces
-            ? NetworkInterface.ListActiveInterfaces()
-            : Array(NetworkInterface.ListActiveInterfaces().prefix(1))
-
         guard !interfaces.isEmpty else {
-            ShowAlert(title: "No Active Interfaces", message: "Could not find any active network interfaces.")
+            showAlert(title: "No Active Interfaces", message: "Could not find any active network interfaces.")
             return false
         }
 
-        var failures: [String] = []
-        for iface in interfaces {
-            let args = ["-setdnsservers", iface] + servers
-            let result = RunCommand("/usr/sbin/networksetup", args: args)
+        // First pass without privileges; networksetup succeeds silently when
+        // the session is already authorized.
+        let failed = interfaces.filter { interface in
+            runCommand("/usr/sbin/networksetup", args: ["-setdnsservers", interface] + servers).exitCode != 0
+        }
+
+        var failureMessage: String?
+        if !failed.isEmpty {
+            // Batch the remaining interfaces into one privileged script so the
+            // user sees a single password prompt regardless of interface count.
+            let command = failed
+                .map { shellCommand(["/usr/sbin/networksetup", "-setdnsservers", $0] + servers) }
+                .joined(separator: " && ")
+            let result = runPrivileged(command: command)
 
             if result.exitCode != 0 {
-                let privResult = RunPrivileged(args: ["/usr/sbin/networksetup"] + args)
-
-                if privResult.exitCode != 0 {
-                    let details = privResult.output.trimmingCharacters(in: .whitespacesAndNewlines)
-                    failures.append(
-                        details.isEmpty
-                            ? "Could not \(action) for \(iface)."
-                            : "Could not \(action) for \(iface). Details: \(details)"
-                    )
-                }
+                let details = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+                let names = failed.joined(separator: ", ")
+                failureMessage = details.isEmpty
+                    ? "Could not \(action) for \(names)."
+                    : "Could not \(action) for \(names). Details: \(details)"
             }
         }
 
-        FlushDnsCache()
+        flushDnsCache()
 
-        if !failures.isEmpty {
-            ShowAlert(title: failTitle, message: failures.joined(separator: "\n"))
+        if let failureMessage {
+            showAlert(title: failTitle, message: failureMessage)
+            return false
         }
-        return failures.isEmpty
+        return true
     }
 
-    static func GetCurrentDNS(for interface: String) -> [String]? {
-        let result = RunCommand("/usr/sbin/networksetup", args: ["-getdnsservers", interface])
+    static func getCurrentDNS(for interface: String) -> [String]? {
+        let result = runCommand("/usr/sbin/networksetup", args: ["-getdnsservers", interface])
         guard result.exitCode == 0 else { return nil }
 
-        return ParseDnsServers(result.output)
+        return parseDnsServers(result.output)
     }
 
-    static func ParseDnsServers(_ output: String) -> [String] {
+    static func parseDnsServers(_ output: String) -> [String] {
         output
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { ProfileStore.isValidIPAddress($0) }
+            .filter { IPAddress.isValid($0) }
     }
 
-    static func DnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
+    static func dnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
         lhs.count == rhs.count && zip(lhs, rhs).allSatisfy {
-            guard let left = ProfileStore.normalizedIPAddress($0),
-                  let right = ProfileStore.normalizedIPAddress($1)
+            guard let left = IPAddress.normalized($0),
+                  let right = IPAddress.normalized($1)
             else { return false }
             return left == right
         }
     }
 
-    private static func FlushDnsCache() {
-        _ = RunCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
+    private static func flushDnsCache() {
+        _ = runCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
     }
 
-    private static func ShowAlert(title: String, message: String) {
-        let show = {
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = message
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
-        if Thread.isMainThread {
-            show()
-        } else {
-            DispatchQueue.main.async(execute: show)
-        }
+    @MainActor
+    private static func showAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

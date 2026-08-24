@@ -11,3 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: swift test
+
+  package:
+    # Catches breakage in the Makefile's bundle assembly, which the release
+    # workflow depends on but tests never exercise.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make app
+      - name: Verify bundle metadata
+        run: |
+          PLIST=".build/apple/Products/Release/DNSSwitcher.app/Contents/Info.plist"
+          for key in CFBundleIdentifier CFBundleShortVersionString LSMinimumSystemVersion LSUIElement; do
+            /usr/libexec/PlistBuddy -c "Print :$key" "$PLIST"
+          done
+          codesign --verify --verbose ".build/apple/Products/Release/DNSSwitcher.app"
