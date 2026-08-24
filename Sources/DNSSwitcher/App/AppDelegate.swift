@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let profileStore = ProfileStore()
     private var statusBarController: StatusBarController?

@@ -51,6 +51,7 @@ enum DnsManager {
         args.map { shellQuote($0) }.joined(separator: " ")
     }
 
+    @MainActor
     static func runPrivileged(command: String) -> CommandResult {
         let escapedCommand = escapeForAppleScript(command)
 
@@ -73,36 +74,41 @@ enum DnsManager {
         return CommandResult(output: result.stringValue ?? "", exitCode: 0)
     }
 
+    @MainActor
     @discardableResult
-    static func applyProfile(_ profile: DnsProfile, toAllInterfaces: Bool) -> Bool {
+    static func applyProfile(_ profile: DnsProfile, to interfaces: [String]) -> Bool {
         applyDns(
             servers: profile.servers,
+            to: interfaces,
             action: "set DNS",
-            failTitle: "DNS Change Partially Failed",
-            toAllInterfaces: toAllInterfaces
+            failTitle: "DNS Change Partially Failed"
         )
     }
 
+    @MainActor
     @discardableResult
-    static func resetToDefault(toAllInterfaces: Bool) -> Bool {
+    static func resetToDefault(on interfaces: [String]) -> Bool {
+        // "empty" is networksetup's literal keyword for clearing DNS servers.
         applyDns(
             servers: ["empty"],
+            to: interfaces,
             action: "reset DNS",
-            failTitle: "DNS Reset Partially Failed",
-            toAllInterfaces: toAllInterfaces
+            failTitle: "DNS Reset Partially Failed"
         )
     }
 
+    /// Runs `networksetup -setdnsservers` for each interface, escalating to a
+    /// single administrator prompt for the interfaces that need one.
+    ///
+    /// Stays on the main actor because it may show an alert and because
+    /// `NSAppleScript` is not safe to use from arbitrary threads.
+    @MainActor
     private static func applyDns(
         servers: [String],
+        to interfaces: [String],
         action: String,
-        failTitle: String,
-        toAllInterfaces: Bool
+        failTitle: String
     ) -> Bool {
-        let interfaces = toAllInterfaces
-            ? NetworkInterface.listActiveInterfaces()
-            : Array(NetworkInterface.listActiveInterfaces().prefix(1))
-
         guard !interfaces.isEmpty else {
             showAlert(title: "No Active Interfaces", message: "Could not find any active network interfaces.")
             return false
@@ -110,8 +116,8 @@ enum DnsManager {
 
         // First pass without privileges; networksetup succeeds silently when
         // the session is already authorized.
-        let failed = interfaces.filter { iface in
-            runCommand("/usr/sbin/networksetup", args: ["-setdnsservers", iface] + servers).exitCode != 0
+        let failed = interfaces.filter { interface in
+            runCommand("/usr/sbin/networksetup", args: ["-setdnsservers", interface] + servers).exitCode != 0
         }
 
         var failureMessage: String?
@@ -152,13 +158,13 @@ enum DnsManager {
         output
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { ProfileStore.isValidIPAddress($0) }
+            .filter { IPAddress.isValid($0) }
     }
 
     static func dnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
         lhs.count == rhs.count && zip(lhs, rhs).allSatisfy {
-            guard let left = ProfileStore.normalizedIPAddress($0),
-                  let right = ProfileStore.normalizedIPAddress($1)
+            guard let left = IPAddress.normalized($0),
+                  let right = IPAddress.normalized($1)
             else { return false }
             return left == right
         }
@@ -168,19 +174,13 @@ enum DnsManager {
         _ = runCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
     }
 
+    @MainActor
     private static func showAlert(title: String, message: String) {
-        let show = {
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = message
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
-        if Thread.isMainThread {
-            show()
-        } else {
-            DispatchQueue.main.async(execute: show)
-        }
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

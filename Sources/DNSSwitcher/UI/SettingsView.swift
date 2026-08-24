@@ -321,7 +321,7 @@ struct ProfileEditorView: View {
         }
 
         for server in servers {
-            if !ProfileStore.isValidIPAddress(server) {
+            if !IPAddress.isValid(server) {
                 validationError = "\"\(server)\" is not a valid IPv4 or IPv6 address."
                 return
             }
