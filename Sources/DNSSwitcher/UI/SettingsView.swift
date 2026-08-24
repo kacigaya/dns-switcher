@@ -157,6 +157,11 @@ struct SettingsView: View {
 
     // MARK: - Footer
 
+    /// Marketing version from the bundle, absent in non-bundled debug builds.
+    private var appVersion: String? {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+    }
+
     private var footer: some View {
         HStack {
             Button(role: .destructive) {
@@ -168,6 +173,14 @@ struct SettingsView: View {
             .liquidGlassButtonStyle()
 
             Spacer()
+
+            if let appVersion {
+                Text("Version \(appVersion)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+            }
 
             Button("Done") {
                 NSApp.keyWindow?.close()
