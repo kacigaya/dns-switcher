@@ -46,8 +46,12 @@ enum DnsManager {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    static func runPrivileged(args: [String]) -> CommandResult {
-        let command = args.map { shellQuote($0) }.joined(separator: " ")
+    /// Quotes each argument and joins them into a single shell command line.
+    static func shellCommand(_ args: [String]) -> String {
+        args.map { shellQuote($0) }.joined(separator: " ")
+    }
+
+    static func runPrivileged(command: String) -> CommandResult {
         let escapedCommand = escapeForAppleScript(command)
 
         let script = """
@@ -104,31 +108,37 @@ enum DnsManager {
             return false
         }
 
-        var failures: [String] = []
-        for iface in interfaces {
-            let args = ["-setdnsservers", iface] + servers
-            let result = runCommand("/usr/sbin/networksetup", args: args)
+        // First pass without privileges; networksetup succeeds silently when
+        // the session is already authorized.
+        let failed = interfaces.filter { iface in
+            runCommand("/usr/sbin/networksetup", args: ["-setdnsservers", iface] + servers).exitCode != 0
+        }
+
+        var failureMessage: String?
+        if !failed.isEmpty {
+            // Batch the remaining interfaces into one privileged script so the
+            // user sees a single password prompt regardless of interface count.
+            let command = failed
+                .map { shellCommand(["/usr/sbin/networksetup", "-setdnsservers", $0] + servers) }
+                .joined(separator: " && ")
+            let result = runPrivileged(command: command)
 
             if result.exitCode != 0 {
-                let privResult = runPrivileged(args: ["/usr/sbin/networksetup"] + args)
-
-                if privResult.exitCode != 0 {
-                    let details = privResult.output.trimmingCharacters(in: .whitespacesAndNewlines)
-                    failures.append(
-                        details.isEmpty
-                            ? "Could not \(action) for \(iface)."
-                            : "Could not \(action) for \(iface). Details: \(details)"
-                    )
-                }
+                let details = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+                let names = failed.joined(separator: ", ")
+                failureMessage = details.isEmpty
+                    ? "Could not \(action) for \(names)."
+                    : "Could not \(action) for \(names). Details: \(details)"
             }
         }
 
         flushDnsCache()
 
-        if !failures.isEmpty {
-            showAlert(title: failTitle, message: failures.joined(separator: "\n"))
+        if let failureMessage {
+            showAlert(title: failTitle, message: failureMessage)
+            return false
         }
-        return failures.isEmpty
+        return true
     }
 
     static func getCurrentDNS(for interface: String) -> [String]? {

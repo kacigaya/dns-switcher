@@ -14,6 +14,14 @@ final class DNSSwitcherTests: XCTestCase {
         XCTAssertEqual(DnsManager.shellQuote("Wi-Fi'; echo pwned"), "'Wi-Fi'\\''; echo pwned'")
     }
 
+    func testShellCommandQuotesEveryArgument() {
+        XCTAssertEqual(
+            DnsManager.shellCommand(["/usr/sbin/networksetup", "-setdnsservers", "Wi-Fi", "1.1.1.1"]),
+            "'/usr/sbin/networksetup' '-setdnsservers' 'Wi-Fi' '1.1.1.1'"
+        )
+        XCTAssertEqual(DnsManager.shellCommand(["a b", "$(id)"]), "'a b' '$(id)'")
+    }
+
     func testServiceOrderParsing() {
         let output = """
             An asterisk (*) denotes that a network service is disabled.
