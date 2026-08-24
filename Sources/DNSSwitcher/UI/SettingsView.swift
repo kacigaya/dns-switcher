@@ -1,14 +1,23 @@
 import SwiftUI
 import ServiceManagement
-import AppKit
 
 struct SettingsView: View {
-    @EnvironmentObject var profileStore: ProfileStore
+    @EnvironmentObject private var profileStore: ProfileStore
     @State private var selection: UUID?
-    @State private var editingProfile: DnsProfile?
-    @State private var showingEditor = false
+    @State private var editorSubject: EditorSubject?
+    @State private var isConfirmingDeletion = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginItemError: String?
+
+    /// The profile being edited plus whether it is new, so the sheet can be
+    /// driven by a single optional value.
+    private struct EditorSubject: Identifiable {
+        let profile: DnsProfile
+        let isNew: Bool
+
+        var id: UUID { profile.id }
+        var title: String { isNew ? "New Profile" : "Edit Profile" }
+    }
 
     var body: some View {
         LiquidGlassContainer(spacing: 18) {
@@ -20,9 +29,10 @@ struct SettingsView: View {
                 optionsCard
 
                 if let loginItemError {
-                    Text(loginItemError)
+                    Label(loginItemError, systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
@@ -32,21 +42,26 @@ struct SettingsView: View {
         }
         .frame(width: 460, height: 560)
         .background(.ultraThinMaterial)
-        .sheet(isPresented: $showingEditor) {
-            if let profile = editingProfile {
-                ProfileEditorView(
-                    profile: profile,
-                    onCancel: { showingEditor = false }
-                ) { updated in
-                    if let idx = profileStore.profiles.firstIndex(where: { $0.id == updated.id }) {
-                        profileStore.profiles[idx] = updated
-                    } else {
-                        profileStore.profiles.append(updated)
-                    }
-                    selection = updated.id
-                    showingEditor = false
-                }
+        .onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
+        .sheet(item: $editorSubject) { subject in
+            ProfileEditorView(
+                profile: subject.profile,
+                title: subject.title,
+                onCancel: { editorSubject = nil }
+            ) { updated in
+                saveProfile(updated)
+                editorSubject = nil
             }
+        }
+        .confirmationDialog(
+            "Delete \(selectedProfile?.name ?? "profile")?",
+            isPresented: $isConfirmingDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive, action: deleteSelected)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This profile will be removed. Your current DNS settings stay unchanged.")
         }
     }
 
@@ -59,15 +74,39 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .tracking(0.8)
 
-            List {
+            profileList
+            toolbar
+        }
+        .padding(16)
+        .liquidGlass(in: .rect(cornerRadius: 20))
+    }
+
+    @ViewBuilder
+    private var profileList: some View {
+        if profileStore.profiles.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "tray")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                Text("No profiles yet")
+                    .font(.callout.weight(.medium))
+                Text("Add a profile to switch DNS from the menu bar.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 210)
+            .accessibilityElement(children: .combine)
+        } else {
+            List(selection: $selection) {
                 ForEach(profileStore.profiles) { profile in
                     ProfileRow(
                         profile: profile,
                         isActive: profile.id == profileStore.activeProfileId,
                         isSelected: profile.id == selection
                     )
-                    .contentShape(Rectangle())
-                    .onTapGesture { selection = profile.id }
+                    .tag(profile.id)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
                     .listRowBackground(Color.clear)
@@ -79,37 +118,26 @@ struct SettingsView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .frame(height: 210)
-
-            toolbar
         }
-        .padding(16)
-        .liquidGlass(in: .rect(cornerRadius: 20))
     }
 
     private var toolbar: some View {
         HStack(spacing: 10) {
-            Button(action: addProfile) {
-                Image(systemName: "plus").frame(width: 22, height: 18)
-            }
-            .help("Add profile")
-            .liquidGlassButtonStyle()
+            Button("Add profile", systemImage: "plus", action: addProfile)
+                .liquidGlassButtonStyle()
 
-            Button(action: removeSelected) {
-                Image(systemName: "minus").frame(width: 22, height: 18)
-            }
-            .help("Remove profile")
-            .liquidGlassButtonStyle()
-            .disabled(selection == nil)
+            Button("Remove profile", systemImage: "minus", action: requestDeletion)
+                .liquidGlassButtonStyle()
+                .disabled(selectedProfile == nil)
 
-            Button(action: editSelected) {
-                Image(systemName: "pencil").frame(width: 22, height: 18)
-            }
-            .help("Edit profile")
-            .liquidGlassButtonStyle()
-            .disabled(selection == nil)
+            Button("Edit profile", systemImage: "pencil", action: editSelected)
+                .liquidGlassButtonStyle()
+                .disabled(selectedProfile == nil)
 
             Spacer()
         }
+        // Keeps the compact icon appearance while VoiceOver still reads the titles.
+        .labelStyle(.iconOnly)
     }
 
     // MARK: - Options
@@ -118,10 +146,8 @@ struct SettingsView: View {
         VStack(spacing: 14) {
             Toggle("Apply to all network interfaces", isOn: $profileStore.applyToAll)
             Divider()
-            Toggle(
-                "Launch at login",
-                isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin)
-            )
+            Toggle("Launch at login", isOn: $launchAtLogin)
+                .onChange(of: launchAtLogin) { setLaunchAtLogin($0) }
         }
         .toggleStyle(.switch)
         .padding(18)
@@ -152,183 +178,63 @@ struct SettingsView: View {
 
     // MARK: - Actions
 
-    private func addProfile() {
-        let newProfile = DnsProfile(name: "New Profile", servers: ["8.8.8.8"])
-        editingProfile = newProfile
-        showingEditor = true
+    private var selectedProfile: DnsProfile? {
+        guard let selection else { return nil }
+        return profileStore.profiles.first { $0.id == selection }
     }
 
-    private func removeSelected() {
-        guard let sel = selection else { return }
-        profileStore.profiles.removeAll { $0.id == sel }
-        if profileStore.activeProfileId == sel {
+    private func addProfile() {
+        editorSubject = EditorSubject(
+            profile: DnsProfile(name: "New Profile", servers: ["1.1.1.1"]),
+            isNew: true
+        )
+    }
+
+    private func editSelected() {
+        guard let selectedProfile else { return }
+        editorSubject = EditorSubject(profile: selectedProfile, isNew: false)
+    }
+
+    private func requestDeletion() {
+        guard selectedProfile != nil else { return }
+        isConfirmingDeletion = true
+    }
+
+    private func deleteSelected() {
+        guard let profile = selectedProfile else { return }
+
+        profileStore.profiles.removeAll { $0.id == profile.id }
+        if profileStore.activeProfileId == profile.id {
             profileStore.activeProfileId = nil
         }
         selection = nil
     }
 
-    private func editSelected() {
-        guard let sel = selection,
-              let profile = profileStore.profiles.first(where: { $0.id == sel })
-        else { return }
-        editingProfile = profile
-        showingEditor = true
+    private func saveProfile(_ profile: DnsProfile) {
+        if let index = profileStore.profiles.firstIndex(where: { $0.id == profile.id }) {
+            profileStore.profiles[index] = profile
+        } else {
+            profileStore.profiles.append(profile)
+        }
+        selection = profile.id
     }
 
     private func setLaunchAtLogin(_ enabled: Bool) {
+        // Skip when the toggle is only catching up with the real status,
+        // which also stops the error path below from looping.
+        guard enabled != (SMAppService.mainApp.status == .enabled) else { return }
+
         do {
             if enabled {
                 try SMAppService.mainApp.register()
             } else {
                 try SMAppService.mainApp.unregister()
             }
-            launchAtLogin = enabled
             loginItemError = nil
         } catch {
             loginItemError = error.localizedDescription
+            // Reflect the state that actually applied.
+            launchAtLogin = SMAppService.mainApp.status == .enabled
         }
-    }
-}
-
-private struct ProfileRow: View {
-    let profile: DnsProfile
-    let isActive: Bool
-    let isSelected: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(isActive ? Color.green : Color.secondary.opacity(0.3))
-                .frame(width: 9, height: 9)
-                .shadow(color: isActive ? .green.opacity(0.6) : .clear, radius: 4)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(profile.name)
-                    .font(.body.weight(.medium))
-                    .lineLimit(1)
-
-                Text(profile.servers.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-        }
-        .padding(.vertical, 9)
-        .padding(.horizontal, 14)
-        .modifier(SelectedRowGlass(isSelected: isSelected, isActive: isActive))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(isActive ? "\(profile.name), active" : profile.name)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-/// Highlights a selected profile row with Liquid Glass; active rows get a green tint.
-private struct SelectedRowGlass: ViewModifier {
-    let isSelected: Bool
-    let isActive: Bool
-
-    func body(content: Content) -> some View {
-        if isSelected {
-            content.liquidGlass(
-                in: .rect(cornerRadius: 12),
-                tint: isActive ? .green.opacity(0.55) : .accentColor.opacity(0.55),
-                interactive: true
-            )
-        } else if isActive {
-            content.background(.green.opacity(0.12), in: .rect(cornerRadius: 12))
-        } else {
-            content
-        }
-    }
-}
-
-struct ProfileEditorView: View {
-    @State var profile: DnsProfile
-    @State private var serversText: String
-    @State private var validationError: String?
-
-    let onCancel: () -> Void
-    let onSave: (DnsProfile) -> Void
-
-    init(profile: DnsProfile, onCancel: @escaping () -> Void, onSave: @escaping (DnsProfile) -> Void) {
-        self._profile = State(initialValue: profile)
-        self._serversText = State(initialValue: profile.servers.joined(separator: ", "))
-        self.onCancel = onCancel
-        self.onSave = onSave
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Edit Profile")
-                .font(.system(.headline, design: .rounded))
-
-            VStack(spacing: 12) {
-                TextField("Name", text: $profile.name)
-                TextField("DNS servers", text: $serversText, prompt: Text("8.8.8.8, 1.1.1.1"))
-            }
-            .textFieldStyle(.roundedBorder)
-
-            if let error = validationError {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .font(.caption)
-            }
-
-            LiquidGlassContainer(spacing: 12) {
-                HStack {
-                    Button("Cancel") { onCancel() }
-                        .keyboardShortcut(.cancelAction)
-                        .liquidGlassButtonStyle()
-
-                    Spacer()
-
-                    Button("Save", action: save)
-                        .keyboardShortcut(.defaultAction)
-                        .liquidGlassButtonStyle(prominent: true)
-                }
-            }
-        }
-        .padding(22)
-        .frame(width: 380)
-        .background(.ultraThinMaterial)
-    }
-
-    private func save() {
-        let trimmedName = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if trimmedName.isEmpty {
-            validationError = "Profile name cannot be empty."
-            return
-        }
-
-        if trimmedName.count > ProfileStore.maxProfileNameLength {
-            validationError = "Profile name must be \(ProfileStore.maxProfileNameLength) characters or fewer."
-            return
-        }
-
-        profile.name = trimmedName
-
-        let servers = serversText
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
-        if servers.isEmpty {
-            validationError = "At least one DNS server is required."
-            return
-        }
-
-        for server in servers {
-            if !IPAddress.isValid(server) {
-                validationError = "\"\(server)\" is not a valid IPv4 or IPv6 address."
-                return
-            }
-        }
-
-        profile.servers = servers
-        validationError = nil
-        onSave(profile)
     }
 }

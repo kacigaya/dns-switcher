@@ -7,7 +7,6 @@ final class ProfileStore: ObservableObject {
     private static let profilesKey = "dns_profiles"
     private static let activeProfileIdKey = "active_profile_id"
     private static let applyToAllKey = "apply_to_all_interfaces"
-    static let maxProfileNameLength = 50
 
     private let defaults: UserDefaults
 
@@ -33,7 +32,7 @@ final class ProfileStore: ObservableObject {
 
         if let data = defaults.data(forKey: Self.profilesKey),
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
-            let validated = decoded.filter { Self.isValidProfile($0) }
+            let validated = decoded.filter(\.isValid)
             self.profiles = decoded.isEmpty ? [] : (validated.isEmpty ? DnsProfile.defaults : validated)
             if self.profiles != decoded,
                let sanitizedData = try? JSONEncoder().encode(self.profiles) {
@@ -57,14 +56,5 @@ final class ProfileStore: ObservableObject {
         if let data = try? JSONEncoder().encode(profiles) {
             defaults.set(data, forKey: Self.profilesKey)
         }
-    }
-
-    private static func isValidProfile(_ profile: DnsProfile) -> Bool {
-        let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, name.count <= Self.maxProfileNameLength, !profile.servers.isEmpty else {
-            return false
-        }
-
-        return profile.servers.allSatisfy(IPAddress.isValid)
     }
 }
