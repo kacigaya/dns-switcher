@@ -9,10 +9,10 @@ final class MenuBuilder: NSObject {
         self.onShowSettings = onShowSettings
     }
 
-    func BuildMenu(_ menu: NSMenu) {
+    func buildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let interfaces = NetworkInterface.ListActiveInterfaces()
+        let interfaces = NetworkInterface.listActiveInterfaces()
 
         if interfaces.isEmpty {
             profileStore.activeProfileId = nil
@@ -22,11 +22,11 @@ final class MenuBuilder: NSObject {
         } else {
             // Detect current DNS to show checkmark
             let checkedInterfaces = profileStore.applyToAll ? interfaces : Array(interfaces.prefix(1))
-            let currentDNS = checkedInterfaces.compactMap { DnsManager.GetCurrentDNS(for: $0) }
+            let currentDNS = checkedInterfaces.compactMap { DnsManager.getCurrentDNS(for: $0) }
             let didReadAll = currentDNS.count == checkedInterfaces.count
             let activeProfileId = didReadAll
                 ? profileStore.profiles.first {
-                    profile in currentDNS.allSatisfy { DnsManager.DnsServersMatch(profile.servers, $0) }
+                    profile in currentDNS.allSatisfy { DnsManager.dnsServersMatch(profile.servers, $0) }
                 }?.id
                 : nil
             if profileStore.activeProfileId != activeProfileId {
@@ -36,7 +36,7 @@ final class MenuBuilder: NSObject {
             for profile in profileStore.profiles {
                 let item = NSMenuItem(
                     title: profile.name,
-                    action: #selector(SelectProfile(_:)),
+                    action: #selector(selectProfile(_:)),
                     keyEquivalent: ""
                 )
                 item.target = self
@@ -53,7 +53,7 @@ final class MenuBuilder: NSObject {
 
             let offItem = NSMenuItem(
                 title: "Off (DHCP)",
-                action: #selector(ResetDNS(_:)),
+                action: #selector(resetDNS(_:)),
                 keyEquivalent: ""
             )
             offItem.target = self
@@ -67,7 +67,7 @@ final class MenuBuilder: NSObject {
 
         let prefsItem = NSMenuItem(
             title: "Preferences\u{2026}",
-            action: #selector(OpenPreferences(_:)),
+            action: #selector(openPreferences(_:)),
             keyEquivalent: ","
         )
         prefsItem.target = self
@@ -75,7 +75,7 @@ final class MenuBuilder: NSObject {
 
         let quitItem = NSMenuItem(
             title: "Quit",
-            action: #selector(Quit(_:)),
+            action: #selector(quit(_:)),
             keyEquivalent: "q"
         )
         quitItem.target = self
@@ -83,29 +83,29 @@ final class MenuBuilder: NSObject {
 
     }
 
-    @objc private func SelectProfile(_ sender: NSMenuItem) {
+    @objc private func selectProfile(_ sender: NSMenuItem) {
         guard let profileId = sender.representedObject as? UUID,
               let profile = profileStore.profiles.first(where: { $0.id == profileId })
         else { return }
 
-        if DnsManager.ApplyProfile(profile, toAllInterfaces: profileStore.applyToAll) {
+        if DnsManager.applyProfile(profile, toAllInterfaces: profileStore.applyToAll) {
             profileStore.activeProfileId = profile.id
         } else {
             profileStore.activeProfileId = nil
         }
     }
 
-    @objc private func ResetDNS(_ sender: NSMenuItem) {
-        if DnsManager.ResetToDefault(toAllInterfaces: profileStore.applyToAll) {
+    @objc private func resetDNS(_ sender: NSMenuItem) {
+        if DnsManager.resetToDefault(toAllInterfaces: profileStore.applyToAll) {
             profileStore.activeProfileId = nil
         }
     }
 
-    @objc private func OpenPreferences(_ sender: NSMenuItem) {
+    @objc private func openPreferences(_ sender: NSMenuItem) {
         onShowSettings()
     }
 
-    @objc private func Quit(_ sender: NSMenuItem) {
+    @objc private func quit(_ sender: NSMenuItem) {
         NSApp.terminate(nil)
     }
 }

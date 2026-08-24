@@ -4,14 +4,14 @@ import XCTest
 final class DNSSwitcherTests: XCTestCase {
     func testDnsParsingAndMatching() {
         XCTAssertEqual(
-            DnsManager.ParseDnsServers("1.1.1.1\n2001:0db8::1\n"),
+            DnsManager.parseDnsServers("1.1.1.1\n2001:0db8::1\n"),
             ["1.1.1.1", "2001:0db8::1"]
         )
-        XCTAssertEqual(DnsManager.ParseDnsServers("There aren't any DNS Servers set on Wi-Fi.\n"), [])
-        XCTAssertTrue(DnsManager.DnsServersMatch(["2001:db8::1"], ["2001:0db8::1"]))
-        XCTAssertFalse(DnsManager.DnsServersMatch(["1.1.1.1", "1.0.0.1"], ["1.0.0.1", "1.1.1.1"]))
-        XCTAssertFalse(DnsManager.DnsServersMatch(["invalid"], ["invalid"]))
-        XCTAssertEqual(DnsManager.ShellQuote("Wi-Fi'; echo pwned"), "'Wi-Fi'\\''; echo pwned'")
+        XCTAssertEqual(DnsManager.parseDnsServers("There aren't any DNS Servers set on Wi-Fi.\n"), [])
+        XCTAssertTrue(DnsManager.dnsServersMatch(["2001:db8::1"], ["2001:0db8::1"]))
+        XCTAssertFalse(DnsManager.dnsServersMatch(["1.1.1.1", "1.0.0.1"], ["1.0.0.1", "1.1.1.1"]))
+        XCTAssertFalse(DnsManager.dnsServersMatch(["invalid"], ["invalid"]))
+        XCTAssertEqual(DnsManager.shellQuote("Wi-Fi'; echo pwned"), "'Wi-Fi'\\''; echo pwned'")
     }
 
     func testServiceOrderParsing() {
@@ -24,6 +24,6 @@ final class DNSSwitcherTests: XCTestCase {
             (*) Disabled VPN
             """
 
-        XCTAssertEqual(NetworkInterface.ParseServiceOrder(output), ["Ethernet", "Wi-Fi"])
+        XCTAssertEqual(NetworkInterface.parseServiceOrder(output), ["Ethernet", "Wi-Fi"])
     }
 }

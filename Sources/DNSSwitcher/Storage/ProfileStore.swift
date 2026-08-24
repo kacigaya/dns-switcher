@@ -10,7 +10,7 @@ final class ProfileStore: ObservableObject {
     static let maxProfileNameLength = 50
 
     @Published var profiles: [DnsProfile] {
-        didSet { Save() }
+        didSet { save() }
     }
 
     @Published var activeProfileId: UUID? {
@@ -50,7 +50,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
-    private func Save() {
+    private func save() {
         if let data = try? JSONEncoder().encode(profiles) {
             UserDefaults.standard.set(data, forKey: Self.profilesKey)
         }

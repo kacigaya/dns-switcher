@@ -88,20 +88,20 @@ struct SettingsView: View {
 
     private var toolbar: some View {
         HStack(spacing: 10) {
-            Button(action: AddProfile) {
+            Button(action: addProfile) {
                 Image(systemName: "plus").frame(width: 22, height: 18)
             }
             .help("Add profile")
             .liquidGlassButtonStyle()
 
-            Button(action: RemoveSelected) {
+            Button(action: removeSelected) {
                 Image(systemName: "minus").frame(width: 22, height: 18)
             }
             .help("Remove profile")
             .liquidGlassButtonStyle()
             .disabled(selection == nil)
 
-            Button(action: EditSelected) {
+            Button(action: editSelected) {
                 Image(systemName: "pencil").frame(width: 22, height: 18)
             }
             .help("Edit profile")
@@ -120,7 +120,7 @@ struct SettingsView: View {
             Divider()
             Toggle(
                 "Launch at login",
-                isOn: Binding(get: { launchAtLogin }, set: SetLaunchAtLogin)
+                isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin)
             )
         }
         .toggleStyle(.switch)
@@ -152,13 +152,13 @@ struct SettingsView: View {
 
     // MARK: - Actions
 
-    private func AddProfile() {
+    private func addProfile() {
         let newProfile = DnsProfile(name: "New Profile", servers: ["8.8.8.8"])
         editingProfile = newProfile
         showingEditor = true
     }
 
-    private func RemoveSelected() {
+    private func removeSelected() {
         guard let sel = selection else { return }
         profileStore.profiles.removeAll { $0.id == sel }
         if profileStore.activeProfileId == sel {
@@ -167,7 +167,7 @@ struct SettingsView: View {
         selection = nil
     }
 
-    private func EditSelected() {
+    private func editSelected() {
         guard let sel = selection,
               let profile = profileStore.profiles.first(where: { $0.id == sel })
         else { return }
@@ -175,7 +175,7 @@ struct SettingsView: View {
         showingEditor = true
     }
 
-    private func SetLaunchAtLogin(_ enabled: Bool) {
+    private func setLaunchAtLogin(_ enabled: Bool) {
         do {
             if enabled {
                 try SMAppService.mainApp.register()
@@ -284,7 +284,7 @@ struct ProfileEditorView: View {
 
                     Spacer()
 
-                    Button("Save", action: Save)
+                    Button("Save", action: save)
                         .keyboardShortcut(.defaultAction)
                         .liquidGlassButtonStyle(prominent: true)
                 }
@@ -295,7 +295,7 @@ struct ProfileEditorView: View {
         .background(.ultraThinMaterial)
     }
 
-    private func Save() {
+    private func save() {
         let trimmedName = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmedName.isEmpty {

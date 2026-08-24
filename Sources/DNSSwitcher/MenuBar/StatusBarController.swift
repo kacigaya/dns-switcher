@@ -17,14 +17,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
         menu.delegate = self
         statusItem.menu = menu
-        RebuildMenu()
+        rebuildMenu()
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        RebuildMenu()
+        rebuildMenu()
     }
 
-    private func RebuildMenu() {
-        menuBuilder.BuildMenu(menu)
+    private func rebuildMenu() {
+        menuBuilder.buildMenu(menu)
     }
 }

@@ -15,11 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusBarController = StatusBarController(profileStore: profileStore) { [weak self] in
-            self?.ShowSettings()
+            self?.showSettings()
         }
     }
 
-    private func ShowSettings() {
+    private func showSettings() {
         if let window = settingsWindow {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
