@@ -18,6 +18,7 @@
 - Apply to all network interfaces or just the primary one
 - Launch at login support
 - IPv4 and IPv6 server validation
+- One administrator prompt per change, no stored credentials
 
 ## Built-in DNS profiles
 
@@ -60,9 +61,41 @@ open ".build/apple/Products/Release/DNSSwitcher.app"
 
 Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings.
 
+## How it works
+
+The app never talks to a DNS resolver itself. It shells out to macOS's own
+`networksetup` tool to read and write the DNS servers of each connected network
+service, then flushes the resolver cache with `dscacheutil -flushcache`.
+
+Reading the current state spawns several `networksetup` processes, so it happens
+off the main thread: the menu opens instantly from the last known state and
+updates in place once the fresh read lands.
+
+Source layout:
+
+| Path | Contents |
+|---|---|
+| `Sources/DNSSwitcher/App` | App entry point, delegate, settings window |
+| `Sources/DNSSwitcher/MenuBar` | Status item and menu construction |
+| `Sources/DNSSwitcher/DNS` | `networksetup` wrappers, DNS state snapshot, IP parsing |
+| `Sources/DNSSwitcher/Models` | `DnsProfile` and its validation rules |
+| `Sources/DNSSwitcher/Storage` | `UserDefaults`-backed profile store |
+| `Sources/DNSSwitcher/UI` | SwiftUI settings screen and Liquid Glass helpers |
+
+## Development
+
+```bash
+swift test          # unit tests
+make app            # build and assemble DNSSwitcher.app
+make dmg            # build the distributable disk image
+```
+
+CI runs the tests and the bundle build on every pull request. Tagging `vX.Y.Z`
+builds the DMG, publishes the release, and updates the Homebrew cask checksum.
+
 ## Why does it ask for my admin password?
 
-macOS requires administrator privileges to change DNS settings via `networksetup`. The app uses AppleScript's `with administrator privileges` to prompt for your password when needed. No credentials are stored.
+macOS requires administrator privileges to change DNS settings via `networksetup`. The app first tries without elevation, and only when that fails does it ask, using AppleScript's `with administrator privileges`. All interfaces that need elevation are changed in a single privileged command, so you are asked at most once per switch. No credentials are stored.
 
 ## Requirements
 
