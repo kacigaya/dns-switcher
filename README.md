@@ -13,7 +13,6 @@
   <a href="https://www.swift.org"><img alt="Swift 6" src="https://shieldcn.dev/badge/Swift-6-f05138.svg?variant=secondary&amp;logo=swift"></a>
   <a href="https://www.apple.com/macos"><img alt="macOS 13 or later" src="https://shieldcn.dev/badge/macOS-13%2B-171717.svg?variant=secondary&amp;logo=apple"></a>
   <a href="https://brew.sh"><img alt="Homebrew" src="https://shieldcn.dev/badge/Homebrew-supported-fbb040.svg?variant=secondary&amp;logo=homebrew&amp;logoColor=171717"></a>
-  <a href="https://github.com/kacigaya/dns-switcher/actions/workflows/ci.yml"><img alt="CI status" src="https://shieldcn.dev/github/ci/kacigaya/dns-switcher.svg?variant=secondary&amp;workflow=CI&amp;branch=main"></a>
   <a href="https://github.com/kacigaya/dns-switcher/blob/main/LICENSE"><img alt="MIT License" src="https://shieldcn.dev/github/license/kacigaya/dns-switcher.svg?variant=secondary"></a>
 </p>
 
