@@ -97,7 +97,10 @@ make app            # build and assemble DNSSwitcher.app
 make dmg            # build the distributable disk image
 ```
 
-CI runs the tests and the bundle build on every pull request. Tagging `vX.Y.Z`
+CI runs on macOS for every pull request. It builds with warnings as errors, runs
+the tests, runs them again with Thread Sanitizer, and builds the app bundle.
+Tests replace every privileged DNS command with a fake, so they never change the
+network settings of the machine that runs them. Tagging `vX.Y.Z` runs the tests,
 builds the DMG, publishes the release, and updates the Homebrew cask checksum.
 
 ## Why does it ask for my admin password?
