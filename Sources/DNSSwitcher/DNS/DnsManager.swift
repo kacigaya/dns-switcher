@@ -94,7 +94,14 @@ enum DnsManager {
         to interfaces: [String],
         effects: Effects = .live
     ) -> Bool {
-        applyDns(
+        // Profiles are validated on save and load; check again here because
+        // these values end up in a command that runs as root.
+        if let error = profile.validationError {
+            effects.showAlert("Invalid Profile", error.message)
+            return false
+        }
+
+        return applyDns(
             servers: profile.servers,
             to: interfaces,
             action: "set DNS",

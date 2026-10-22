@@ -71,6 +71,20 @@ struct DnsManagerApplyTests {
         #expect(fake.alerts.map(\.title) == ["No Active Interfaces"])
     }
 
+    @Test(arguments: [
+        DnsProfile(name: "No servers", servers: []),
+        DnsProfile(name: "Injected", servers: ["1.1.1.1; rm -rf /"]),
+        DnsProfile(name: "Keyword", servers: ["empty"]),
+    ])
+    func invalidProfileIsRejectedBeforeAnyCommand(profile: DnsProfile) {
+        let applied = DnsManager.applyProfile(profile, to: ["Wi-Fi"], effects: fake.effects)
+
+        #expect(applied == false)
+        #expect(fake.commands.isEmpty)
+        #expect(fake.privilegedCommands.isEmpty)
+        #expect(fake.alerts.map(\.title) == ["Invalid Profile"])
+    }
+
     @Test func resetClearsServersWithEmptyKeyword() {
         let reset = DnsManager.resetToDefault(on: ["Wi-Fi"], effects: fake.effects)
 
