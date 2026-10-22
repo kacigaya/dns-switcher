@@ -182,11 +182,20 @@ enum DnsManager {
         return parseDnsServers(result.output)
     }
 
-    static func parseDnsServers(_ output: String) -> [String] {
-        output
+    /// The servers listed in `networksetup -getdnsservers` output, an empty
+    /// list when the service uses automatic DNS, or nil for any other output.
+    /// networksetup can exit 0 after printing an error, so text that is
+    /// neither an address nor the "no servers" notice must not read as DHCP.
+    static func parseDnsServers(_ output: String) -> [String]? {
+        let servers = output
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { IPAddress.isValid($0) }
+
+        if !servers.isEmpty {
+            return servers
+        }
+        return output.contains("aren't any DNS Servers set") ? [] : nil
     }
 
     static func dnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
