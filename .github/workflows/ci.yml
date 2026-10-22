@@ -5,19 +5,42 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: swift test
+        with:
+          persist-credentials: false
+      - run: swift --version
+      # Swift 6 language mode already enforces strict concurrency; this also
+      # fails the build on any other compiler warning, tests included.
+      - name: Build with warnings as errors
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - name: Test
+        run: swift test --skip-build
+      # Tests mock every privileged DNS operation, so none of these runs
+      # change the runner's network settings.
+      - name: Test with Thread Sanitizer
+        run: swift test --sanitize=thread
 
   package:
     # Catches breakage in the Makefile's bundle assembly, which the release
     # workflow depends on but tests never exercise.
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: make app
       - name: Verify bundle metadata
         run: |
@@ -26,3 +49,4 @@ jobs:
             /usr/libexec/PlistBuddy -c "Print :$key" "$PLIST"
           done
           codesign --verify --verbose ".build/apple/Products/Release/DNSSwitcher.app"
+          lipo ".build/apple/Products/Release/DNSSwitcher.app/Contents/MacOS/DNSSwitcher" -verify_arch arm64 x86_64

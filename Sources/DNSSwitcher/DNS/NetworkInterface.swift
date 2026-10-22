@@ -13,12 +13,19 @@ enum NetworkInterface {
         return parseServiceOrder(result.output)
     }
 
+    /// Extracts enabled service names from `-listnetworkserviceorder`.
+    /// Only lines that start with a numeric position such as "(1)" name a
+    /// service; "(*)" marks a disabled one, and "(Hardware Port: ...)" lines
+    /// can contain their own parentheses, as in "Ethernet Adapter (en4)".
     static func parseServiceOrder(_ output: String) -> [String] {
         output.components(separatedBy: "\n").compactMap { line in
             let line = line.trimmingCharacters(in: .whitespaces)
             guard line.hasPrefix("("),
-                  !line.hasPrefix("(*)"),
                   let close = line.firstIndex(of: ")")
+            else { return nil }
+            let position = line[line.index(after: line.startIndex)..<close]
+            guard !position.isEmpty,
+                  position.allSatisfy({ $0.isASCII && $0.isNumber })
             else { return nil }
             let name = String(line[line.index(after: close)...]).trimmingCharacters(in: .whitespaces)
             return name.isEmpty ? nil : name

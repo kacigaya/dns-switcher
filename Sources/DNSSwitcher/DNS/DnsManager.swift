@@ -2,9 +2,25 @@ import AppKit
 import Foundation
 
 enum DnsManager {
-    struct CommandResult {
+    struct CommandResult: Equatable {
         let output: String
         let exitCode: Int32
+    }
+
+    /// Side effects of a DNS change. Production uses `live`; tests pass a
+    /// recording stand-in so they never modify the real network settings.
+    struct Effects {
+        var run: @MainActor (_ executable: String, _ args: [String]) -> CommandResult
+        var runPrivileged: @MainActor (_ command: String) -> CommandResult
+        var showAlert: @MainActor (_ title: String, _ message: String) -> Void
+
+        @MainActor static var live: Effects {
+            Effects(
+                run: DnsManager.runCommand(_:args:),
+                runPrivileged: DnsManager.runPrivileged(command:),
+                showAlert: DnsManager.showAlert(title:message:)
+            )
+        }
     }
 
     static func runCommand(_ executable: String, args: [String]) -> CommandResult {
@@ -38,12 +54,13 @@ enum DnsManager {
         return "'\(escaped)'"
     }
 
-    /// Escapes a pre-quoted shell command for embedding inside an AppleScript
-    /// `do shell script "..."` double-quoted string.
-    private static func escapeForAppleScript(_ command: String) -> String {
-        return command
+    /// AppleScript source that runs a pre-quoted shell command as root. The
+    /// command is escaped for the `do shell script "..."` double-quoted string.
+    static func privilegedScript(for command: String) -> String {
+        let escapedCommand = command
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+        return "do shell script \"\(escapedCommand)\" with administrator privileges"
     }
 
     /// Quotes each argument and joins them into a single shell command line.
@@ -53,11 +70,7 @@ enum DnsManager {
 
     @MainActor
     static func runPrivileged(command: String) -> CommandResult {
-        let escapedCommand = escapeForAppleScript(command)
-
-        let script = """
-            do shell script "\(escapedCommand)" with administrator privileges
-            """
+        let script = privilegedScript(for: command)
 
         var error: NSDictionary?
         guard let appleScript = NSAppleScript(source: script) else {
@@ -76,24 +89,37 @@ enum DnsManager {
 
     @MainActor
     @discardableResult
-    static func applyProfile(_ profile: DnsProfile, to interfaces: [String]) -> Bool {
-        applyDns(
+    static func applyProfile(
+        _ profile: DnsProfile,
+        to interfaces: [String],
+        effects: Effects = .live
+    ) -> Bool {
+        // Profiles are validated on save and load; check again here because
+        // these values end up in a command that runs as root.
+        if let error = profile.validationError {
+            effects.showAlert("Invalid Profile", error.message)
+            return false
+        }
+
+        return applyDns(
             servers: profile.servers,
             to: interfaces,
             action: "set DNS",
-            failTitle: "DNS Change Partially Failed"
+            failTitle: "DNS Change Partially Failed",
+            effects: effects
         )
     }
 
     @MainActor
     @discardableResult
-    static func resetToDefault(on interfaces: [String]) -> Bool {
+    static func resetToDefault(on interfaces: [String], effects: Effects = .live) -> Bool {
         // "empty" is networksetup's literal keyword for clearing DNS servers.
         applyDns(
             servers: ["empty"],
             to: interfaces,
             action: "reset DNS",
-            failTitle: "DNS Reset Partially Failed"
+            failTitle: "DNS Reset Partially Failed",
+            effects: effects
         )
     }
 
@@ -107,17 +133,18 @@ enum DnsManager {
         servers: [String],
         to interfaces: [String],
         action: String,
-        failTitle: String
+        failTitle: String,
+        effects: Effects
     ) -> Bool {
         guard !interfaces.isEmpty else {
-            showAlert(title: "No Active Interfaces", message: "Could not find any active network interfaces.")
+            effects.showAlert("No Active Interfaces", "Could not find any active network interfaces.")
             return false
         }
 
         // First pass without privileges; networksetup succeeds silently when
         // the session is already authorized.
         let failed = interfaces.filter { interface in
-            runCommand("/usr/sbin/networksetup", args: ["-setdnsservers", interface] + servers).exitCode != 0
+            effects.run("/usr/sbin/networksetup", ["-setdnsservers", interface] + servers).exitCode != 0
         }
 
         var failureMessage: String?
@@ -127,7 +154,7 @@ enum DnsManager {
             let command = failed
                 .map { shellCommand(["/usr/sbin/networksetup", "-setdnsservers", $0] + servers) }
                 .joined(separator: " && ")
-            let result = runPrivileged(command: command)
+            let result = effects.runPrivileged(command)
 
             if result.exitCode != 0 {
                 let details = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -138,10 +165,11 @@ enum DnsManager {
             }
         }
 
-        flushDnsCache()
+        // Flush even after a partial failure: some interfaces may have changed.
+        _ = effects.run("/usr/bin/dscacheutil", ["-flushcache"])
 
         if let failureMessage {
-            showAlert(title: failTitle, message: failureMessage)
+            effects.showAlert(failTitle, failureMessage)
             return false
         }
         return true
@@ -154,11 +182,20 @@ enum DnsManager {
         return parseDnsServers(result.output)
     }
 
-    static func parseDnsServers(_ output: String) -> [String] {
-        output
+    /// The servers listed in `networksetup -getdnsservers` output, an empty
+    /// list when the service uses automatic DNS, or nil for any other output.
+    /// networksetup can exit 0 after printing an error, so text that is
+    /// neither an address nor the "no servers" notice must not read as DHCP.
+    static func parseDnsServers(_ output: String) -> [String]? {
+        let servers = output
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { IPAddress.isValid($0) }
+
+        if !servers.isEmpty {
+            return servers
+        }
+        return output.contains("aren't any DNS Servers set") ? [] : nil
     }
 
     static func dnsServersMatch(_ lhs: [String], _ rhs: [String]) -> Bool {
@@ -168,10 +205,6 @@ enum DnsManager {
             else { return false }
             return left == right
         }
-    }
-
-    private static func flushDnsCache() {
-        _ = runCommand("/usr/bin/dscacheutil", args: ["-flushcache"])
     }
 
     @MainActor
