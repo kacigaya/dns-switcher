@@ -32,7 +32,10 @@ final class ProfileStore: ObservableObject {
 
         if let data = defaults.data(forKey: Self.profilesKey),
            let decoded = try? JSONDecoder().decode([DnsProfile].self, from: data) {
-            let validated = decoded.filter(\.isValid)
+            // Duplicate IDs would break SwiftUI list identity and menu lookup,
+            // so keep only the first profile with each ID.
+            var seenIds = Set<UUID>()
+            let validated = decoded.filter { $0.isValid && seenIds.insert($0.id).inserted }
             self.profiles = decoded.isEmpty ? [] : (validated.isEmpty ? DnsProfile.defaults : validated)
             if self.profiles != decoded,
                let sanitizedData = try? JSONEncoder().encode(self.profiles) {
