@@ -31,10 +31,15 @@ struct ProfileEditorView: View {
             Text(title)
                 .font(.system(.headline, design: .rounded))
 
-            VStack(spacing: 12) {
-                TextField("Name", text: $name)
+            // The default macOS form style keeps each label visible beside its
+            // field, unlike a placeholder that disappears once text is typed.
+            Form {
+                TextField("Name:", text: $name, prompt: Text("Cloudflare"))
                     .focused($nameFieldIsFocused)
-                TextField("DNS servers", text: $serversText, prompt: Text("8.8.8.8, 1.1.1.1"))
+                TextField("Servers:", text: $serversText, prompt: Text("1.1.1.1, 1.0.0.1"))
+                Text("Separate addresses with commas or spaces.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             .textFieldStyle(.roundedBorder)
             // macOS 13 predates the zero-argument onChange overload.
@@ -44,7 +49,7 @@ struct ProfileEditorView: View {
             if let validationMessage {
                 Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
-                    .font(.caption)
+                    .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
             }
 

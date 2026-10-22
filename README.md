@@ -66,7 +66,7 @@ open ".build/apple/Products/Release/DNSSwitcher.app"
 
 ## Usage
 
-Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings.
+Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings. In Preferences, double-click a profile to edit it. Right-click a profile to edit or delete it. Press Delete to remove the selected profile.
 
 ## How it works
 
