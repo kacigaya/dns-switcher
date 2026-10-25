@@ -1,82 +1,157 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#143e82"/>
-      <stop offset="100%" stop-color="#3c97e3"/>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="100" y1="100" x2="924" y2="924">
+      <stop offset="0" stop-color="#0f2e68"/>
+      <stop offset="0.08" stop-color="#10336f"/>
+      <stop offset="0.3" stop-color="#194f91"/>
+      <stop offset="0.52" stop-color="#2673b7"/>
+      <stop offset="0.73" stop-color="#3593d9"/>
+      <stop offset="0.92" stop-color="#41aaf2"/>
+      <stop offset="1" stop-color="#46b1f7"/>
     </linearGradient>
-
-    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.25" />
+    <radialGradient id="globe-white" gradientUnits="userSpaceOnUse" cx="510" cy="290" r="475">
+      <stop offset="0" stop-color="#fdfefd"/>
+      <stop offset="0.18" stop-color="#fcfdfe"/>
+      <stop offset="0.29" stop-color="#f6f9fd"/>
+      <stop offset="0.39" stop-color="#eff4fa"/>
+      <stop offset="0.5" stop-color="#e5eef7"/>
+      <stop offset="0.6" stop-color="#d9e6f3"/>
+      <stop offset="0.71" stop-color="#cbddef"/>
+      <stop offset="0.81" stop-color="#c0d6ec"/>
+      <stop offset="0.92" stop-color="#b8d1e8"/>
+      <stop offset="1" stop-color="#b0cce6"/>
+    </radialGradient>
+    <linearGradient id="white" gradientUnits="userSpaceOnUse" x1="0" y1="200" x2="0" y2="840">
+      <stop offset="0" stop-color="#fefefe"/>
+      <stop offset="0.16" stop-color="#f6fafd"/>
+      <stop offset="0.28" stop-color="#edf3fa"/>
+      <stop offset="0.41" stop-color="#e5eef8"/>
+      <stop offset="0.53" stop-color="#d9e7f3"/>
+      <stop offset="0.66" stop-color="#cfdff0"/>
+      <stop offset="0.78" stop-color="#c3d8ee"/>
+      <stop offset="0.91" stop-color="#b9d2e9"/>
+      <stop offset="1" stop-color="#b2cde8"/>
+    </linearGradient>
+    <linearGradient id="green" gradientUnits="userSpaceOnUse" x1="0" y1="180" x2="0" y2="860">
+      <stop offset="0" stop-color="#89db8f"/>
+      <stop offset="0.47" stop-color="#5fc675"/>
+      <stop offset="1" stop-color="#37ad62"/>
+    </linearGradient>
+    <linearGradient id="server" gradientUnits="userSpaceOnUse" x1="0" y1="750" x2="0" y2="852">
+      <stop offset="0" stop-color="#fdfffe"/>
+      <stop offset="1" stop-color="#aacfee"/>
+    </linearGradient>
+    <filter id="shadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
     </filter>
-
-    <g id="white-arrow">
-      <path d="M 346 100.12 A 180 180 0 0 1 411.88 346" fill="none" stroke="#f1f5f9" stroke-width="20" stroke-linecap="round"/>
-      <polygon points="-12,-20 28,0 -12,20" fill="#f1f5f9" transform="translate(411.88, 346) rotate(120)" />
-    </g>
-    <g id="green-arrow">
-      <path d="M 346 100.12 A 180 180 0 0 1 411.88 346" fill="none" stroke="#4ade80" stroke-width="20" stroke-linecap="round"/>
-      <polygon points="-12,-20 28,0 -12,20" fill="#4ade80" transform="translate(411.88, 346) rotate(120)" />
-    </g>
+    <filter id="groove" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <path id="head-1" d="M754.9 492 L807.71 563.4 A3 3 0 0 0 812.44 563.51 L870.9 492 Z"/>
+    <path id="head-2" d="M533 759 L465.32 813.24 A3 3 0 0 0 465.24 817.86 L533 876 Z"/>
+    <path id="head-3" d="M154 530 L208.95 462.39 A3 3 0 0 1 213.62 462.41 L267.7 530 Z"/>
+    <path id="head-4" d="M479 147.5 L544.21 201.01 A3 3 0 0 1 544.24 205.62 L479 260.5 Z"/>
+    <!-- globe outline, notched where the arrow heads pass -->
+    <mask id="globe-shape" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <ellipse cx="512" cy="511.75" rx="252.2" ry="253.75" fill="#fff"/>
+      <g stroke="#000" stroke-width="34" stroke-linejoin="round">
+        <use href="#head-1"/>
+        <use href="#head-2"/>
+        <use href="#head-3"/>
+        <use href="#head-4"/>
+      </g>
+    </mask>
+    <!-- globe face: outline minus the engraved network -->
+    <mask id="globe-face" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect width="1024" height="1024" fill="#fff" mask="url(#globe-shape)"/>
+      <g fill="none" stroke="#000" stroke-width="13" stroke-linecap="round">
+        <path d="M298.15 510.95 A213.85 217.1 0 1 1 725.85 510.95 A213.85 217.1 0 1 1 298.15 510.95"/>
+        <path d="M380 511 C380 637.1 465.8 705 512 705"/>
+        <path d="M644 511 C644 637.1 558.2 705 512 705"/>
+      </g>
+      <g fill="#fff" mask="url(#globe-shape)">
+        <circle cx="512" cy="312.1" r="40"/>
+        <circle cx="512" cy="711.5" r="40"/>
+        <circle cx="325.4" cy="547.7" r="40"/>
+        <circle cx="698.6" cy="547.7" r="40"/>
+      </g>
+      <g fill="none" stroke="#000" stroke-width="13">
+        <path d="M380 511 C380 385.55 465.8 318 512 318"/>
+        <path d="M644 511 C644 385.55 558.2 318 512 318"/>
+        <path d="M512 312.1 L512 711.5"/>
+        <path d="M387 442.14 L512 550.57"/>
+        <path d="M637 442.14 L512 550.57"/>
+        <path d="M387 440.29 L328 397.66"/>
+        <path d="M637 440.29 L696 397.66"/>
+        <path d="M413.8 637.45 L358 661.16"/>
+        <path d="M610.2 637.45 L666 661.16"/>
+        <path d="M413.8 636.19 L482.88 574.01"/>
+        <path d="M610.2 636.19 L541.12 574.01"/>
+        <path d="M325.4 548.5 L472.8 548.5"/>
+        <path d="M698.6 548.5 L551.2 548.5"/>
+      </g>
+      <g fill="#000">
+        <circle cx="512" cy="312.1" r="28"/>
+        <circle cx="512" cy="711.5" r="27.5"/>
+        <circle cx="512" cy="547.8" r="28"/>
+        <circle cx="325.4" cy="547.7" r="27.5"/>
+        <circle cx="698.6" cy="547.7" r="27.5"/>
+        <circle cx="387.1" cy="440.3" r="28"/>
+        <circle cx="636.9" cy="440.3" r="28"/>
+        <circle cx="413.8" cy="634.8" r="18.5"/>
+        <circle cx="610.2" cy="634.8" r="18.5"/>
+        <rect x="427" y="434" width="170" height="12"/>
+      </g>
+    </mask>
   </defs>
 
-  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+  <path d="M100.25 296.35 C100.25 170.91 170.81 100.35 296.25 100.35 L727.75 100.35 C853.19 100.35 923.75 170.91 923.75 296.35 L923.75 727.25 C923.75 852.69 853.19 923.25 727.75 923.25 L296.25 923.25 C170.81 923.25 100.25 852.69 100.25 727.25 Z" fill="url(#bg)"/>
 
-  <g filter="url(#drop-shadow)">
-    <animateTransform attributeName="transform" type="rotate" from="0 256 256" to="360 256 256" dur="6s" repeatCount="indefinite" />
-    <use href="#green-arrow" /> 
-    <use href="#white-arrow" transform="rotate(120 256 256)" />
-    <use href="#white-arrow" transform="rotate(240 256 256)" />
+  <!-- arrows -->
+  <g filter="url(#shadow)">
+    <path d="M553.99 186.85 A321.05 325.55 0 0 1 832.89 499.25 L795.41 500.46 A283.55 288.05 0 0 0 549.15 224.03 L565.5 203.5 Z" fill="url(#green)"/>
+    <use href="#head-1" fill="url(#green)"/>
+    <path d="M826.97 572.68 A321.05 325.55 0 0 1 525.64 834.86 L524.07 797.39 A283.55 288.05 0 0 0 790.2 565.31 L811.5 583.5 Z" fill="url(#green)"/>
+    <use href="#head-2" fill="url(#green)"/>
+    <path d="M456.76 830.29 A321.05 325.55 0 0 1 191.22 522.91 L228.69 521.35 A283.55 288.05 0 0 0 463.12 793.34 L445 817.5 Z" fill="url(#white)"/>
+    <use href="#head-3" fill="url(#white)"/>
+    <path d="M196.41 449.84 A321.05 325.55 0 0 1 485.54 185.16 L488.58 222.53 A283.55 288.05 0 0 0 233.25 456.82 L214.5 439.5 Z" fill="url(#white)"/>
+    <use href="#head-4" fill="url(#white)"/>
   </g>
 
-  <g filter="url(#drop-shadow)">
-    <g stroke="#f1f5f9" fill="none" stroke-width="6" stroke-linecap="round">
-      <circle cx="256" cy="256" r="130" stroke-width="8" />
-      <line x1="256" y1="126" x2="256" y2="386" />
-      <line x1="126" y1="256" x2="386" y2="256" />
-      <path d="M 256 126 Q 160 256 256 386" />
-      <path d="M 256 126 Q 352 256 256 386" />
-      <path d="M 126 256 Q 256 160 386 256" />
-      <path d="M 126 256 Q 256 352 386 256" />
+  <!-- globe: dark groove base under the engraved white face -->
+  <g filter="url(#shadow)">
+    <g mask="url(#globe-shape)">
+      <rect width="1024" height="1024" fill="url(#bg)"/>
+      <rect width="1024" height="1024" fill="#000" opacity="0.1"/>
     </g>
-
-    <g fill="#f1f5f9">
-      <circle cx="256" cy="256" r="12">
-        <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="256" cy="126" r="10" />
-      <circle cx="256" cy="386" r="10" />
-      <circle cx="126" cy="256" r="10" />
-      <circle cx="386" cy="256" r="10" />
-      <circle cx="202" cy="202" r="8" />
-      <circle cx="310" cy="202" r="8" />
-      <circle cx="202" cy="310" r="8" />
-      <circle cx="310" cy="310" r="8" />
+    <g filter="url(#groove)">
+      <rect width="1024" height="1024" fill="url(#globe-white)" mask="url(#globe-face)"/>
     </g>
   </g>
 
-  <g transform="translate(370, 390)" filter="url(#drop-shadow)">
-    <rect x="0" y="0" width="80" height="18" rx="4" fill="#f1f5f9" />
-    <circle cx="12" cy="9" r="3.5" fill="#1e293b" />
-    <circle cx="24" cy="9" r="3.5" fill="#1e293b" />
-    <circle cx="68" cy="9" r="4" fill="#4ade80">
-      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" />
-    </circle>
-
-    <rect x="0" y="24" width="80" height="18" rx="4" fill="#f1f5f9" />
-    <circle cx="12" cy="33" r="3.5" fill="#1e293b" />
-    <circle cx="24" cy="33" r="3.5" fill="#1e293b" />
-    <circle cx="68" cy="33" r="4" fill="#4ade80">
-      <animate attributeName="opacity" values="1;0.2;1" dur="1.2s" repeatCount="indefinite" />
-    </circle>
-
-    <rect x="0" y="48" width="80" height="18" rx="4" fill="#f1f5f9" />
-    <circle cx="12" cy="57" r="3.5" fill="#1e293b" />
-    <circle cx="24" cy="57" r="3.5" fill="#1e293b" />
-    <circle cx="68" cy="57" r="4" fill="#4ade80">
-      <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" />
-    </circle>
-    
-    <path d="M 40 66 L 40 82 M 16 82 L 64 82 M 16 82 L 16 90 M 64 82 L 64 90" stroke="#f1f5f9" stroke-width="3" fill="none" />
-    <circle cx="40" cy="82" r="5" fill="#f1f5f9" />
+  <!-- server -->
+  <g filter="url(#shadow)" fill="url(#server)">
+    <rect x="751" y="748.5" width="96" height="23.5" rx="5"/>
+    <rect x="751" y="777" width="96" height="23.5" rx="5"/>
+    <rect x="751" y="805.5" width="96" height="23.5" rx="5"/>
+    <rect x="797" y="831.5" width="4" height="11"/>
+    <rect x="751" y="846.5" width="35" height="5.5" rx="2.75"/>
+    <rect x="813" y="846.5" width="35" height="5.5" rx="2.75"/>
+    <circle cx="799" cy="849.5" r="8.25"/>
+  </g>
+  <g fill="#3275ac">
+    <circle cx="762.5" cy="760.25" r="4.25"/>
+    <circle cx="776.25" cy="760.25" r="4.25"/>
+    <circle cx="790" cy="760.25" r="4.25"/>
+    <circle cx="834" cy="760.25" r="4.25"/>
+    <circle cx="762.5" cy="788.75" r="4.25"/>
+    <circle cx="776.25" cy="788.75" r="4.25"/>
+    <circle cx="790" cy="788.75" r="4.25"/>
+    <circle cx="834" cy="788.75" r="4.25"/>
+    <circle cx="762.5" cy="817.25" r="4.25"/>
+    <circle cx="776.25" cy="817.25" r="4.25"/>
+    <circle cx="790" cy="817.25" r="4.25"/>
+    <circle cx="834" cy="817.25" r="4.25"/>
   </g>
 </svg>
