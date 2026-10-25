@@ -18,8 +18,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menuBuilder.onDnsChanged = { [weak self] in self?.refreshSnapshot() }
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "network", accessibilityDescription: "DNS Switcher")
-            button.image?.isTemplate = true
+            button.image = StatusBarIcon.make()
             button.toolTip = "DNS Switcher"
             button.setAccessibilityLabel("DNS Switcher")
         }

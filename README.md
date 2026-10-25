@@ -53,7 +53,7 @@ xattr -d com.apple.quarantine /Applications/DNSSwitcher.app
 1. Download the latest DMG from [Releases](https://github.com/kacigaya/dns-switcher/releases)
 2. Drag DNS Switcher to Applications
 3. Run `xattr -d com.apple.quarantine /Applications/DNSSwitcher.app`
-4. Launch the app. A network icon appears in the menu bar.
+4. Launch the app. A globe icon with two circular arrows appears in the menu bar.
 
 ### Build from source
 
@@ -66,7 +66,7 @@ open ".build/apple/Products/Release/DNSSwitcher.app"
 
 ## Usage
 
-Click the network icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings. In Preferences, double-click a profile to edit it. Right-click a profile to edit or delete it. Press Delete to remove the selected profile.
+Click the globe icon in the menu bar to see your DNS profiles. Select one to apply it. Choose Off (DHCP) to reset to automatic DNS. Open Preferences to manage profiles and settings. In Preferences, double-click a profile to edit it. Right-click a profile to edit or delete it. Press Delete to remove the selected profile.
 
 ## How it works
 
